@@ -96,3 +96,106 @@ TEST_F(ConstructionNodeTest, initForDifferentSideLengthsReturnCorrectSubcenters)
         }
     }
 }
+
+
+/**
+* INTERSECTION FUNCTIONS TESTS
+*/
+
+TEST_F(ConstructionNodeTest, triangleOutsideBoundboxTest){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    // Case 1: triangle is outside by being above in Z axis
+    Eigen::Vector3f p1;
+    p1 << 0.5, 10, 10;
+    Eigen::Vector3f p2;
+    p2 << 0.3, 10, 10;
+    Eigen::Vector3f p3;
+    p3 << 0.5, 5, 10;
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+
+    // Case 2: triangle is outside by being below in Z axis
+    p1 << 0.5, 10, -10;
+    p2 << 0.3, 10, -10;
+    p3 << 0.5, 5, -10;
+
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+    // Case 3: triangle outside by being above in X axis
+    p1 << 10, 4, 0.5;
+    p2 << 10, 4, 0.5;
+    p3 << 10, 5,  0.5;
+
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+
+    // Case 4: triangle outside by being below in X axis
+    p1 << -10, 4, 0.5;
+    p2 << -10, 4, 0.5;
+    p3 << -10, 5,  0.5;
+
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+
+
+    // Case 5: triangle outside by being above in Y axis
+    p1 << 3, 10, 0.5;
+    p2 << 3, 10, 0.5;
+    p3 << 3, 10,  0.5;
+
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+
+
+    // Case 6: triangle outside by being below in Y axis
+    p1 << 3, -10, 0.5;
+    p2 << 3, -10, 0.5;
+    p3 << 3, -10,  0.5;
+
+    EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
+}
+
+TEST_F(ConstructionNodeTest, triangleCompletelyContainedTest){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::Vector3f p1;
+    p1 << 0.5, -3, -2;
+    Eigen::Vector3f p2;
+    p2 << 3, 0.5, 2.6;
+    Eigen::Vector3f p3;
+    p3 << -4, 3.4, 0;
+    EXPECT_TRUE(node.checkTriangleInBox(p1, p2, p3));
+}
+
+
+TEST_F(ConstructionNodeTest, trianglePartiallyContainedTest){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::Vector3f p1;
+    p1 << 0.5, -3, -2;
+    Eigen::Vector3f p2;
+    p2 << 20, 0.5, 2.6;
+    Eigen::Vector3f p3;
+    p3 << -4, 3.4, 30;
+    EXPECT_TRUE(node.checkTriangleInBox(p1, p2, p3));
+}
+
+TEST_F(ConstructionNodeTest, triangleIntersectingButOutsideTest){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::Vector3f p1;
+    p1 << 0, -4, 0;
+    Eigen::Vector3f p2;
+    p2 << 20, 4, 2.6;
+    Eigen::Vector3f p3;
+    p3 << -4, 3.4, 30;
+    EXPECT_TRUE(node.checkTriangleInBox(p1, p2, p3));
+}
