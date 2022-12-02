@@ -84,7 +84,7 @@ TEST_F(OctreeTest, zeroDepthTreeConsidersRootNodeAsLeaf) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 0, center, vertices, triangles);
+    Octree octree(10, 4, center, vertices, triangles);
     EXPECT_TRUE(octree.isRootLeaf());
 }
 
@@ -103,7 +103,7 @@ TEST_F(OctreeTest, zeroDepthTreeHasNoNodes) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 0, center, vertices, triangles);
+    Octree octree(10, 4, center, vertices, triangles);
     EXPECT_EQ(octree.getNodeNumber(), 0);
 }
 
@@ -121,20 +121,12 @@ TEST_F(OctreeTest, oneDepthTreeProducesEightChildrenNodes) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 3, center, vertices, triangles);
+    Octree octree(2, 2, center, vertices, triangles);
     EXPECT_FALSE(octree.isRootLeaf());
     // The root does not count as a node
     EXPECT_EQ(octree.getNodeNumber(), 8);
 }
 
-TEST_F(OctreeTest, oneDepthTreeStoresTrianglesInChildren) {
-    EXPECT_FALSE(true);
-}
-
-
-TEST_F(OctreeTest, twoDepthTreeSubdividesChildrenProperly) {
-    EXPECT_FALSE(true);
-}
 
 
 /**

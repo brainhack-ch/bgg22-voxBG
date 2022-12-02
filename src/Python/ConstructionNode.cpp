@@ -87,7 +87,7 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
     separating_axis_faces_bb.row(11) = u2;
 
     // Check if triangle extents are aligned with bounding box along triangle normal
-    separating_axis_faces_bb.row(11) = f0.cross(f1);
+    separating_axis_faces_bb.row(12) = f0.cross(f1);
 
     // Test on all face separating axis
     for(int axis_i = 0; axis_i < 13; axis_i++ ) {
@@ -100,8 +100,13 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
 
         // Project bounding box along separating axis
         // We only care about the extents of the box to project it along the axis!
-        float extent_length = side_length/2;
-        float r = (std::abs(extent_length*u0.dot(sep_axis)) + extent_length*std::abs(u1.dot(sep_axis)) + extent_length*std::abs(u2.dot(sep_axis)))*extent_length;
+        float extent_length_x= side_length/2;
+        float extent_length_y= side_length/2;
+        float extent_length_z= side_length/2;
+
+        float r = extent_length_x*std::abs(u0.dot(sep_axis)) +
+                extent_length_y*std::abs(u1.dot(sep_axis)) +
+                extent_length_z*std::abs(u2.dot(sep_axis));
 
         // See if most extreme point of the triangle intersects r.
         // If we find an axis where this is not the case, there is a separating axis: intersection impossible.
@@ -191,6 +196,9 @@ ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f
 
 bool ConstructionNode::checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,
                                               const Eigen::Matrix3f &triangle_vertices) {
+    /**
+     * Based on Möller, Tomas, and Ben Trumbore. "Fast, minimum storage ray/triangle intersection." ACM SIGGRAPH 2005 Courses. 2005. 7-es.
+     */
 
     Eigen::Vector3f v0 = triangle_vertices.row(0);
     Eigen::Vector3f v1 = triangle_vertices.row(1);

@@ -217,7 +217,7 @@ TEST_F(ConstructionNodeTest, edgePartiallyInsideIntersects){
 /**
  * TRIANGLE TO BOX INTERSECTION TESTS
  */
-TEST_F(ConstructionNodeTest, triangleOutsideBoundboxTest){
+TEST_F(ConstructionNodeTest, triangleOutsideBoundindBoxTest){
     Eigen::Vector3f center;
     center << 5, 5, 5;
     float parent_length = 20.0f;
@@ -230,6 +230,9 @@ TEST_F(ConstructionNodeTest, triangleOutsideBoundboxTest){
     p2 << 0.3, 10, 10;
     Eigen::Vector3f p3;
     p3 << 0.5, 5, 10;
+
+    std::cout << node.center.transpose() << std::endl;
+    std::cout << node.side_length << std::endl;
     EXPECT_FALSE(node.checkTriangleInBox(p1, p2, p3));
 
     // Case 2: triangle is outside by being below in Z axis

@@ -14,7 +14,7 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
         throw std::invalid_argument("Cannot have 0 triangles per node");
     }
     // The base case is simple: check if the number of inserted triangles is above max_triangles_per_leaf
-    if(triangles.rows() < max_triangles_per_leaf) {
+    if(triangles.rows() <= max_triangles_per_leaf) {
         is_root_leaf = true;
     } else {
         is_root_leaf = false;
