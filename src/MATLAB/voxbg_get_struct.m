@@ -1,23 +1,11 @@
-% same as hb_get_G but with difference that it does not save; just loads G
-% if it exits; sincr the checks to comapre loaded G and created G in
-% hb_get_G are not so robust.
-% 
-% [06.05.2022]
- 
-
-function  [G,sts] = hb_get_G_v2(ID,gtype,opts,verbose,justGf)
-%HB_GET_G creates G structure. If G exists, it is loaded and verified, and
-%if necessary, it's content is updated.
-%
+function  [G,sts] = voxbg_get_struct(ID,gtype,opts)
+%VOXBG_GET_STRUCT creates G structure. If G exists, it is loaded and
+%verified, and if necessary, it's content is updated.
 %
 % Hamid Behjat
 
-if ~exist('justGf','var') || isempty(justGf)
+if ~exist('justGf','var')
     justGf = false;
-end
-
-if ~exist('verbose','var') || isempty(verbose)
-    verbose = true;
 end
 
 if ~ischar(ID)
@@ -29,9 +17,6 @@ hcp_root= opts.hcp_root;
 
 if ~isfield(opts,'hcpsave_root') || isempty(opts.hcpsave_root) % 20 jan 2021
     hcpsave_root = hcp_root;
-    if verbose
-        fprintf('\n..Results will be save on same directory as original HCP data.');
-    end
 else
     hcpsave_root = opts.hcpsave_root; % 14 April 2020. Save MATLAB results on local. Then transfer to remote using rsync.
 end
@@ -52,23 +37,7 @@ switch G.tissue
         G.hemisphere = 'both';
 end
 
-switch G.tissue
-    case {'pslh','psrh'}
-        G.surftype = 'pial';
-    case {'wslh','wsrh'}
-        G.surftype = 'white';
-    otherwise
-        G.surftype = 'n/a';
-end
-
-switch G.surftype
-    case {'pial','white'}
-        if isfield(opts,'weighted_surface_graph')
-            G.weighted = opts.weighted_surface_graph;
-        else
-            G.weighted = false;
-        end
-end
+G.surftype = 'n/a';
 
 G.res = gtype(d+(4:7));
 
@@ -84,7 +53,7 @@ G.rsTag    = [G.resTag,G.spaceTag];
 G.trsTag   = [G.tissue,G.rsTag];
 
 switch G.tissue
-    case {'wm','wmlh','wmrh','cerebrum'}
+    case 'wm'
         if contains(gtype,'.fod')
             G.diffusionModel = 'fod';
             G.settingsTag = gtype(strfind(gtype,'.fixels'):end);
@@ -125,34 +94,9 @@ switch G.tissue
             G.magnitude = str2double(G.settingsTag(strfind(G.settingsTag,'.mag')+length('.mag'))); %:d(end-1)-1)); % use magnitude term as in Anjali's work?
             d = strfind(G.settingsTag,'.');
             G.method = G.settingsTag(d(end-1)+1:d(end)-1);
-            %switch G.tissue
-            %    case {'wm','wmlh','wmrh'}
-            %G.magnitude = str2double(G.settingsTag(strfind(G.settingsTag,'.mag')+length('.mag'):d(end-1)-1)); % use magnitude term as in Anjali's work?
-            %G.method = G.settingsTag(d(end-1)+1:d(end)-1);
-            %    case 'cerebrum'
-            %G.magnitude = str2double(G.settingsTag(strfind(G.settingsTag,'.mag')+length('.mag'):d(end)-1));
-            %G.method = G.settingsTag(d(end)+1:end);
-            
-            if strcmp(G.tissue,'cerebrum')
-                
-                d = str2double(G.settingsTag(strfind(G.settingsTag,'.gmEdgeWeightVers')+length('.gmEdgeWeightVers')));
-                
-                %-Weighting type for GM-GM/WM edges:
-                % [v1] weighted based on ODFs, just as for WM-WM edges.
-                % [v2] non-weighted:
-                %       GM-GM edge weights: 1.
-                %       GM-WM edge weights: 1.
-                % [v3] hybrid weighting: 
-                %       GM-GM edges weights: inverse Euclidean distance. 
-                %       GM-WM edge weights: as in v1. 
-                
-                G.gmEdgeWeightVers = d;
-                G.gmEdgeWeightTag = sprintf('.gmEdgeWeightVers%d',d);
-            end
-            %end
         end
         switch G.tissue
-            case {'wm','wmlh','wmrh'}
+            case 'wm'
                 d = str2double(G.settingsTag(strfind(G.settingsTag,'.onlywm')+length('.onlywm'))); % only WM as graph nodes or include other subcortical stuff?
                 switch d
                     case 1
@@ -162,23 +106,12 @@ switch G.tissue
                         G.maskType    = 'subcortical';
                         G.maskTypeTag = '.onlywm0';
                 end
-            case 'cerebrum'
-                G.maskType    = 'cerebrum';
-                G.maskTypeTag = '';
         end
         G.maskTypeTag = sprintf('%s.neighb%d',G.maskTypeTag,G.neighb);
-        
-    otherwise
-        
+    case {'gmlh','gmrh'}
         G.settingsTag = '';
-        switch G.tissue
-            case {'pslh','psrh','wslh','wsrh'} % pial/white surface
-                G.neighb = 'n/a';
-                G.maskTypeTag = '';
-            otherwise
-                G.neighb = 3;
-                G.maskTypeTag = sprintf('.neighb%d',G.neighb);
-        end
+        G.neighb = 3;
+        G.maskTypeTag = sprintf('.neighb%d',G.neighb);
 end
 
 G.f = [];
@@ -207,59 +140,31 @@ end
 [~,~] = mkdir(f.MNI_results_save);
 [~,~] = mkdir(f.graph);
 switch G.tissue
-    case {'wm','wmlh','wmrh','cerebrum'}
+    case 'wm'
         f.diffusion        = fullfile(f.T1w,'Diffusion');
         f.diffusion_save   = fullfile(f.T1w_save,'Diffusion');
         [~,~] = mkdir(f.diffusion_save);
 end
 f.G = fullfile(f.graph,['G.',G.type,'.mat']);
 
-%-Volumetric files---------------------------------------------------------
-% f.source is used for mask extraction.
-% f.mask is the file used for G design, which has been:
-% 1. Extracted from f.source.
-% 2. Resampled/resliced to desired resolution/space.
-% 3. Made single connected.
-
-%switch G.tissue
-%    case {'wm','wmlh','wmrh'}
-%        midtag = G.maskTypeTag;
-%    otherwise
-%        midtag = '';
-%end
-%n = [G.tissue,midtag,G.resTag]; %gtype(1:(strfind(gtype,'res')+6));
 n = [G.tissue,G.maskTypeTag,G.resTag];
 
+%-Volumetric files---------------------------------------------------------
 switch G.tissue
-    case {'gm','gmlh','gmrh'}
+    case {'gmlh','gmrh'}
         f.source = fullfile(f.T1w,'ribbon.nii');
         f.mask = fullfile(f.graph,[n,'.spaceT1w.nii']);
-    case {'wm','wmlh','wmrh','cerebrum'}
+    case 'wm'
         switch G.tissue
-            case {'wm','wmlh','wmrh'}
+            case 'wm'
                 f.source = fullfile(f.diffusion,'nodif_brain_mask.nii');
                 f.mask = fullfile(f.graph,[n,'.DiffusionSpace.nii']);
                 if contains(gtype,'.fod')
                     f.mask_afdPruned = strrep(f.mask,'.nii','.afdPruned.nii');
                     f.mask_fixelOrientationPruned = strrep(f.mask,'.nii','.fixelOrientationPruned.nii');
                 end
-            case 'cerebrum'
-                f.source1 = fullfile(f.T1w,'ribbon.nii');                 % to extract cortex
-                f.source2 = fullfile(f.diffusion,'nodif_brain_mask.nii'); % to extract WM and subcortical nuclei
-                f.mask           = fullfile(f.graph,[n,'.DiffusionSpace.nii']); % both gm and wm; final mask for building cerebrum graph. 
+            otherwise
                 
-                f.mask_wm        = fullfile(f.graph,[n,'.DiffusionSpace.wm.nii']);
-                
-                f.mask_gm        = fullfile(f.graph,[n,'.DiffusionSpace.gm.nii']);
-                f.mask_gm_ctx    = fullfile(f.graph,[n,'.DiffusionSpace.gm_ctx.nii']);
-                f.mask_gm_subctx = fullfile(f.graph,[n,'.DiffusionSpace.gm_subctx.nii']);
-                
-                f.mask_gm_ctx_subctx_common = fullfile(f.graph,[n,'.DiffusionSpace.gm_ctx_subctx_common.nii']);
-                
-                f.mask_wm_gmborder          = fullfile(f.graph,[n,'.DiffusionSpace.wm_gmborder.nii']);
-                f.mask_gm_wmborder          = fullfile(f.graph,[n,'.DiffusionSpace.gm_wmborder.nii']);
-                
-                f.mask  = fullfile(f.graph,[n,'.DiffusionSpace.nii']);
         end
         f.diffusion_data = fullfile(f.diffusion_save,'data.nii.gz');
         f.t1w_graphspace = fullfile(f.graph,'t1w.DiffusionSpace.nii');
@@ -267,24 +172,14 @@ switch G.tissue
         f.aparcaseg_graphspace = fullfile(f.graph,'aparc+aseg.DiffusionSpace.nii');
         f.aparcaseg = fullfile(f.T1w,'aparc+aseg.nii'); % not used in graph definition; just used to extract wm part within subcortical region used as graph mask, for debuging purposes
         f.wm_graphspace = fullfile(f.graph,'aparc+aseg_wm.DiffusionSpace.nii');
-    case {'pslh','psrh','wslh','wsrh'}
-        %f.source = fullfile(f.T1w,'ribbon.nii');
-        %f.mask = fullfile(f.T1w,ID,'mri',[gtype(3:4),'.ribbon.nii']);
-        f.ribbon_FS_1mm_mgz = fullfile(f.T1w,ID,'mri',[gtype(3:4),'.ribbon.mgz']); % 1mm cubic resolution in coregister with freesurfer orig.mgz using which synthetic data are defined [29 april 2021] 
-        f.ribbon_FS_1mm_nii = fullfile(f.T1w,ID,'mri',[gtype(3:4),'.ribbon_1mm.nii']); % nii converted version of f.ribbon_FS_1mm_mgz
-        % mask used as ref for reslicing preprocessed fMRI from MNI to G
-        % space.
 end
 
 %-Surface files------------------------------------------------------------
-% In gmxx design, pial files used to prune edges connnecting sulci banks.
-% In wmxx design, white files used to define inter-cerebral mask.
-%
 d_surf = fullfile(hcpsave_root,ID,'T1w',ID,'surf'); %see NOTE 1.
 [~,~] = mkdir(d_surf);
 
 switch G.tissue
-    case {'gmlh','gmrh','pslh','psrh','wslh','wsrh'}
+    case {'gmlh','gmrh'}
         d = G.tissue(3:4);
         f.surface.pial = {fullfile(d_surf,[d,'.pial.surf.gii'])};
         f.surface.white = {fullfile(d_surf,[d,'.white.surf.gii'])};
@@ -292,19 +187,6 @@ switch G.tissue
         f.surfmesh.white = fullfile(d_surf,[d,'.white']);
         f.surfmesh.pial_ascii = fullfile(d_surf,[d,'.pial.asc']);
         f.surfmesh.white_ascii = fullfile(d_surf,[d,'.white.asc']);
-    case {'wmlh','wmrh'}
-        f.surface.white = {fullfile(d_surf,[gtype(3:4),'.white.surf.gii'])};
-    case {'gm','cerebrum'}
-        % for 'gm': pial and white surfaces are used for pruning. 
-        % for 'cerebrum': pial and white surfaces used for pruning; white
-        % surface is also used to determine edges between cortex and white.
-        f.surface.pial = {...
-            fullfile(d_surf,'lh.pial.surf.gii'),...
-            fullfile(d_surf,'rh.pial.surf.gii')};
-        
-        f.surface.white = {...
-            fullfile(d_surf,'lh.white.surf.gii'),...
-            fullfile(d_surf,'rh.white.surf.gii')};
     case 'wm'
         f.surface.white = {...
             fullfile(d_surf,'lh.white.surf.gii'),...
@@ -448,9 +330,5 @@ if strcmp(sts,'loaded')
             G.f.odf = Gfodf; % put back
         end
     end
-end
-
-if verbose
-    fprintf('\n..Graph: %s',sts);
 end
 end
