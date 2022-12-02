@@ -106,6 +106,70 @@ TEST_F(ConstructionNodeTest, initForDifferentSideLengthsReturnCorrectSubcenters)
  * EDGE TO TRIANGLE INTERSECTION TESTS
  */
 
+TEST_F(ConstructionNodeTest, edgeNormalToTriangleWithCorrectLengthIntersects){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::MatrixX3f vertices(3, 3);
+    vertices << 1.0, 0.0, 0.0,
+            0., 1, 0,
+            0, 0, 1;
+    Eigen::MatrixX3i triangles(1, 3);
+    triangles << 0, 0, 1;
+
+    //node.insertTriangles(vertices, triangles, std::vector({0}));
+
+    Eigen::Vector3f p1(0.0, 0.0, 0.0);
+    Eigen::Vector3f p2(0.0, 0.0, 1.0);
+
+   EXPECT_TRUE(node.checkTriangleIntersect(p1, p2, vertices));
+}
+
+TEST_F(ConstructionNodeTest, whenEdgeJustTooSmallNoIntersect){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::MatrixX3f vertices(3, 3);
+    vertices << 1.0, 0.0, 0.0,
+            0., 1, 0,
+            0, 0, 1;
+    Eigen::MatrixX3i triangles(1, 3);
+    triangles << 0, 0, 1;
+
+    //node.insertTriangles(vertices, triangles, std::vector({0}));
+
+    Eigen::Vector3f p1(0.0, 0.0, 0.0);
+    Eigen::Vector3f p2(0.0, 0.0, 0.9);
+
+    EXPECT_FALSE(node.checkTriangleIntersect(p1, p2, vertices));
+}
+
+TEST_F(ConstructionNodeTest, edgeParallelButWithDifferentElevationNoIntersect){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::MatrixX3f vertices(3, 3);
+    vertices << 1.0, 0.0, 0.0,
+            3., 10, 0,
+            2, 4, 0;
+    Eigen::MatrixX3i triangles(1, 3);
+    triangles << 0, 0, 1;
+
+    //node.insertTriangles(vertices, triangles, std::vector({0}));
+
+    Eigen::Vector3f p1(0.5, 3.0, 2.0);
+    Eigen::Vector3f p2(0.2, 5.0, 2.0);
+
+    EXPECT_FALSE(node.checkTriangleIntersect(p1, p2, vertices));
+}
+
+
 /**
  * EDGE TO BOX INTERSECTION TESTS
  */
