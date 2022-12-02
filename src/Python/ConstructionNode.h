@@ -15,6 +15,7 @@ public:
     float side_length;
     unsigned int leafid;
     bool isLeaf;
+    int division_level;
 
     ConstructionNode(Eigen::Vector3f parent_center, unsigned int node_space_id, float side_length_parent);
     void insertTriangles(const Eigen::MatrixX3f &vertex_coordinates,

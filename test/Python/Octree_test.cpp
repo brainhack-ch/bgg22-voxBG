@@ -44,7 +44,7 @@ TEST_F(OctreeTest, initializingWithSingleTriangleAllowsToRecoverTriangle) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 3, center, vertices, triangles);
+    Octree octree(10, 3, center, vertices, triangles, 0);
     EXPECT_EQ(octree.triangleNumbers(), 1);
     EXPECT_TRUE(octree.getTriangles().isApprox(triangles));
 }
@@ -64,7 +64,7 @@ TEST_F(OctreeTest, initializingWithSeveralTrianglesAllowsToRecoverTriangles) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 3, center, vertices, triangles);
+    Octree octree(10, 3, center, vertices, triangles, 0);
     EXPECT_EQ(octree.triangleNumbers(), 3);
     EXPECT_TRUE(octree.getTriangles().isApprox(triangles));
 }
@@ -84,7 +84,7 @@ TEST_F(OctreeTest, zeroDepthTreeConsidersRootNodeAsLeaf) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 4, center, vertices, triangles);
+    Octree octree(10, 4, center, vertices, triangles, 0);
     EXPECT_TRUE(octree.isRootLeaf());
 }
 
@@ -103,7 +103,7 @@ TEST_F(OctreeTest, zeroDepthTreeHasNoNodes) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 4, center, vertices, triangles);
+    Octree octree(10, 4, center, vertices, triangles, 0);
     EXPECT_EQ(octree.getNodeNumber(), 0);
 }
 
@@ -114,14 +114,14 @@ TEST_F(OctreeTest, oneDepthTreeProducesEightChildrenNodes) {
             0, 0, 1,
             0, 0, 0;
     Eigen::MatrixX3i triangles(3, 3);
-    triangles << 0, 0, 1,
-            1, 2, 0,
-            2, 3, 3;
+    triangles << 0, 1, 2,
+            0, 2, 3,
+            2, 1, 3;
 
     Eigen::Vector3f center;
-    center << 0.0, 0.0, 0.0;
+    center << 0.5, 0.5, 0.5;
 
-    Octree octree(2, 2, center, vertices, triangles);
+    Octree octree(2, 2, center, vertices, triangles, 1);
     EXPECT_FALSE(octree.isRootLeaf());
     // The root does not count as a node
     EXPECT_EQ(octree.getNodeNumber(), 8);

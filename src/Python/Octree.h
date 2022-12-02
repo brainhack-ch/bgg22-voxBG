@@ -19,6 +19,7 @@ private:
     unsigned int n_triangles;
     unsigned int max_triangles_per_leaf;
     float side_length;
+    unsigned int max_depth;
     Eigen::Vector3f root_center;
     std::vector<ConstructionNode*> nodes;
     std::vector<unsigned int> triangle_node_ids; // This array stores contiguously for each terminal leaf the indices of its triangles
@@ -41,7 +42,7 @@ public:
      * @param triangles Triangles, defined as triplets of vertices ids (points towards vertices array)
      */
     Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
-           Eigen::MatrixX3i triangles);
+           Eigen::MatrixX3i triangles, unsigned int max_subdivision_level);
 
     /**
      * Main method of interest for the octree: the intersection checking of an edge with the octree
