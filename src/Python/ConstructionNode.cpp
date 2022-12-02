@@ -9,6 +9,9 @@ ConstructionNode::ConstructionNode(Eigen::Vector3f parent_center, unsigned int n
                                    side_length(side_length_parent/2) {
     // Decide the center here
     // We must construct the X, Y and Z displacement
+    if(abs(side_length_parent) < 10e-14 || side_length_parent < 0){
+        throw std::invalid_argument("Side length cannot be null");
+    }
     float half_side = side_length*0.5;
     float x_shift = node_space_id % 4 < 2 ? -half_side: half_side;
     float y_shift = node_space_id % 2 == 0 ? -half_side : half_side;
@@ -16,7 +19,6 @@ ConstructionNode::ConstructionNode(Eigen::Vector3f parent_center, unsigned int n
     center(0) = parent_center.x() + x_shift;
     center(1) = parent_center.y() + y_shift;
     center(2) = parent_center.z() + z_shift;
-    //disp << x_shift, y_shift , z_shift;
 }
 
 ConstructionNode::~ConstructionNode() = default;
