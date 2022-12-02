@@ -125,9 +125,12 @@ bool ConstructionNode::checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eige
                                                const Eigen::MatrixX3f &vertices,
                                                const Eigen::MatrixX3i &triangles) {
     if(isLeaf){
-        if(!triangle_ids.empty()){
-            for(auto &t: triangle_ids){
-                // Loop over triangles to figure out if there exists an intersection
+        for(auto &t: triangle_ids){
+            // Loop over triangles to figure out if there exists an intersection
+            std::vector<int> ind(triangles.row(t).begin(), triangles.row(t).end());
+            // Check with this triangle's vertices coordinates if there is indeed an intersection
+            if(checkTriangleIntersect(edge_origin, edge_end, vertices(ind, Eigen::placeholders::all))){
+                return true;
             }
         }
     } else {
