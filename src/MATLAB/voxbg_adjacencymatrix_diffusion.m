@@ -1,4 +1,4 @@
-function [G,sts] = hb_adjacencymatrix_diffusion(G,opts,chk)
+function [G,sts] = voxbg_adjacencymatrix_diffusion(G,opts,chk)
 %HB_ADJACENCYMATRIX_DIFFUSION builds adjacency matrix using diffuion MRI data.
 %
 %
