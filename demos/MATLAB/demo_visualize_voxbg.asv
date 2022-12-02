@@ -27,7 +27,7 @@ opts.GaussianFWHM     = []; % 4,6,.. or [] to skip
 opts.MaskedGaussian   = 1; % also plot masked Gaussian?
 opts.plotTissueMasks  = true; % GM, WM, or GM+WM for cerebrum graph
 opts.plotForColorbar  = false; % plot extra atom graph just for colorbar?
-opts.whichRefImage    = 'mask'; % 't1w','mask'
+opts.whichRefImage    = 't1w'; % 't1w','mask'
 opts.whichUnderlay    = 'none'; % 't1w', 'none'
 opts.Alpha            = 'mask';
 opts.ChebOrd          = []; % default used: 50
@@ -48,13 +48,13 @@ gtypes = {
     };
 gtype = gtypes{which_graph};
 
-
 d_scr     = fileparts(mfilename('fullpath'));
 d_demos   = fileparts(d_scr);
-d_main    = fileparts(d_demos);
-d_src     = fullfile(d_main,'src','MATLAB'); 
 d_hcpdata = fullfile(d_demos,'data','HCP','dataset');
-addpath(genpath(d_src));
+d_hbrepos = '/Users/hamid/Dropbox/github';
+getfiles(d_scr,d_hbrepos);
+addpath(genpath(fullfile(d_scr,'utils')));
+addpath(genpath(fullfile(d_scr,'resources')));
 
 d_savefigs = fullfile(d_demos,'figs');
 if ~exist(d_savefigs,'dir')
@@ -75,22 +75,22 @@ G = d.G;
 
 %-Visualize voxBG.
 %--------------------------------------------------------------------------
-loadODfs = false; % ok if false, but makes recalling hb_inspect_graph after a change to opts fileds slow
+loadODfs = true; % ok if false, but makes recalling hb_inspect_graph after a change to opts fileds slow
+G{iG} = voxbg_get_struct(ID,gtype,struct('hcp_root',d_hcpdata),0);
 
 d = fullfile(d_savefigs,strrep(gtype,'.','_'));
 opts.d_savefigs = d;
 if ~exist(d,'dir')
     mkdir(d);
 end
-
 if loadODfs
-    d = load(G.f.odf.fib_mat,'odf').odf;
-    if size(d,2)~=G.N
-        d = d(:,G.pruning.ind_pre_pruning_A_remained_post_pruning);
-        assert(size(d,2)==G.N);
+    d = load(G{iG}.f.odf.fib_mat,'odf').odf;
+    if size(d,2)~=G{iG}.N
+        d = d(:,G{iG}.pruning.ind_pre_pruning_A_remained_post_pruning);
+        assert(size(d,2)==G{iG}.N);
     end
-    opts.odfs = repmat(d,2,1);
-    opts.vertices = load(G.f.odf.fib_mat,'odf_vertices').odf_vertices;
+    opts{iG}.odfs = repmat(d,2,1);
+    opts{iG}.vertices = load(G{iG}.f.odf.fib_mat,'odf_vertices').odf_vertices;
 end
 
 % nodes = 
