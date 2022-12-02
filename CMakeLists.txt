@@ -42,7 +42,7 @@ add_subdirectory(pybind11)
 #link_libraries('boost_system')
 
 
-set(SOURCES src/Python/Octree.h src/Python/Octree.cpp)
+set(SOURCES src/Python/Octree.h src/Python/Octree.cpp src/Python/ConstructionNode.cpp src/Python/ConstructionNode.h)
 set(SOURCES_TEST src/Python/Octree.h src/Python/Octree.cpp src/Python/Octree.h
         test/Python/Octree_test.cpp test/Python/main_test.cpp)
 

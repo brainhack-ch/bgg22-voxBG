@@ -16,7 +16,7 @@ struct Node {
 class Octree {
 private:
     unsigned int n_triangles;
-    unsigned int depth;
+    unsigned int max_triangles_per_leaf;
     float side_length;
     Eigen::Vector3f root_center;
     std::vector<Node*> nodes;
@@ -34,12 +34,12 @@ public:
      * Specifically, a triangle is inserted into the octree node with which its barycenter intersects.
      * If several such nodes exist, it is inserted in all of them
      * @param length
-     * @param depth
+     * @param max_triangles_per_leaf The number of triangles in a leaf before subdivision of a leaf will start
      * @param center
      * @param vertices Vertices of the mesh
      * @param triangles Triangles, defined as triplets of vertices ids (points towards vertices array)
      */
-    Octree(float length, unsigned int depth, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
+    Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
            Eigen::MatrixX3i triangles);
 
     /**
@@ -63,14 +63,13 @@ public:
 
     ~Octree();
 
-private:
     /**
      * Tests if an edge intersects with a triangle.
      * @param edge_origin
      * @param edge_end
      * @return
      */
-    bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
+    static bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
 
     /**
      * Tests if an edge intersects with a square box.
@@ -80,8 +79,7 @@ private:
      * @param box_side_length
      * @return
      */
-    bool checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length);
-
+    static bool checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length);
 
 };
 
