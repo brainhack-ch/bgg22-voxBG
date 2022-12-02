@@ -35,7 +35,7 @@ public:
 
 
     /**
-     * Tests if an edge intersects with a triangle.
+     * Tests if an edge intersects with any of this node's triangles.
      * @param edge_origin
      * @param edge_end
      * @return
@@ -43,6 +43,15 @@ public:
     bool
     checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::MatrixX3f &vertices,
                             const Eigen::MatrixX3i &triangles);
+
+    /**
+     * Tests if the edge intersects with given triangle.
+     * @param edge_origin
+     * @param edge_end
+     * @param triangle_vertices
+     * @return
+     */
+    bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::Matrix3f &triangle_vertices);
 
     /**
      * Tests if an edge intersects with a square box.

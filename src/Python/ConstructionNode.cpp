@@ -185,3 +185,38 @@ ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f
     // If all tests passed, we can return true: there exist no separating axis!
     return true;
 }
+
+bool ConstructionNode::checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,
+                                              const Eigen::Matrix3f &triangle_vertices) {
+
+    Eigen::Vector3f v0 = triangle_vertices.row(0);
+    Eigen::Vector3f v1 = triangle_vertices.row(1);
+    Eigen::Vector3f v2 = triangle_vertices.row(2);
+
+    Eigen::Vector3f e1 = v1 - v0;
+    Eigen::Vector3f e2 = v2 - v0;
+    Eigen::Vector3f D = (edge_end-edge_origin).normalized();
+    Eigen::Vector3f T = edge_origin - v0;
+
+    Eigen::Vector3f q = T.cross(e1);
+    Eigen::Vector3f P = D.cross(e2);
+    float quotient = P.dot(e1);
+    float t = q.dot(e2) / quotient;
+    // The segment of intersection is greater than our own segment: intersection cannot happen with this edge!
+    if(t > (edge_end-edge_origin).norm()){
+        return false;
+    }
+    // Check that we are on the triangle
+    float u = P.dot(T) /quotient;
+    // We cannot be on the triangle!
+    if(u <0 || u > 1){
+        return false;
+    }
+
+    float v = q.dot(D) / quotient;
+    if(v < 0 || v > 1 || u + v > 1){
+        return false;
+    }
+
+    return true;
+}
