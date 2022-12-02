@@ -10,6 +10,9 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
                Eigen::MatrixX3i triangles): n_triangles(triangles.rows()), max_triangles_per_leaf(max_triangles_per_leaf), side_length(length),
                                             root_center(center), vertices(vertices), triangles(triangles){
 
+    if(max_triangles_per_leaf == 0){
+        throw std::invalid_argument("Cannot have 0 triangles per node");
+    }
     // The base case is simple: check if the number of inserted triangles is above max_triangles_per_leaf
     if(triangles.rows() < max_triangles_per_leaf) {
         is_root_leaf = true;
@@ -91,4 +94,9 @@ Octree::~Octree(){
     }
     nodes.clear();
 
+}
+
+bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+    // Perform DFS traversal of the nodes and query everytime
+    return false;
 }

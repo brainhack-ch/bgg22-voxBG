@@ -102,6 +102,57 @@ TEST_F(ConstructionNodeTest, initForDifferentSideLengthsReturnCorrectSubcenters)
 * INTERSECTION FUNCTIONS TESTS
 */
 
+/**
+ * EDGE TO TRIANGLE INTERSECTION TESTS
+ */
+
+/**
+ * EDGE TO BOX INTERSECTION TESTS
+ */
+
+TEST_F(ConstructionNodeTest, edgeOutsideBoxDoesNotIntersect){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    // Case 1: edge is outside by being above in Z axis
+    Eigen::Vector3f p1;
+    p1 << 0.5, 10, 10;
+    Eigen::Vector3f p2;
+    p2 << 0.3, 10, 10;
+    EXPECT_FALSE(node.checkBoxIntersect(p1, p2));
+}
+
+TEST_F(ConstructionNodeTest, edgeFullyInsideIntersects){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::Vector3f p1;
+    p1 << 0.5, 0, 0.5;
+    Eigen::Vector3f p2;
+    p2 << 0.3, 0.2, 4;
+    EXPECT_TRUE(node.checkBoxIntersect(p1, p2));
+}
+
+TEST_F(ConstructionNodeTest, edgePartiallyInsideIntersects){
+    Eigen::Vector3f center;
+    center << 5, 5, 5;
+    float parent_length = 20.0f;
+    ConstructionNode node(center, 0, parent_length);
+
+    Eigen::Vector3f p1;
+    p1 << 0.5, 0, 0.5;
+    Eigen::Vector3f p2;
+    p2 << 0.3, 20, 4;
+    EXPECT_TRUE(node.checkBoxIntersect(p1, p2));
+}
+
+/**
+ * TRIANGLE TO BOX INTERSECTION TESTS
+ */
 TEST_F(ConstructionNodeTest, triangleOutsideBoundboxTest){
     Eigen::Vector3f center;
     center << 5, 5, 5;

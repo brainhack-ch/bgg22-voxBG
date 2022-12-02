@@ -121,7 +121,7 @@ TEST_F(OctreeTest, oneDepthTreeProducesEightChildrenNodes) {
     Eigen::Vector3f center;
     center << 0.0, 0.0, 0.0;
 
-    Octree octree(10, 1, center, vertices, triangles);
+    Octree octree(10, 3, center, vertices, triangles);
     EXPECT_FALSE(octree.isRootLeaf());
     // The root does not count as a node
     EXPECT_EQ(octree.getNodeNumber(), 8);

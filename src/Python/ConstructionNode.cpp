@@ -49,7 +49,7 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
     /*
      * Credits for the base code (adapted to our API) based on Separating axis theorem:
      * https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
-     * Based on:
+     * Based on: Akenine-Möller, Tomas. "Fast 3D triangle-box overlap testing." Acm siggraph 2005 courses. 2005. 8-es.
      */
 
     // Translate points to the origin; conceptually, we want to detect if a collision occurs with a bounding box centered at origin here
@@ -69,7 +69,7 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
 
     Eigen::MatrixX3f separating_axis_faces_bb(13, 3);
 
-    separating_axis_faces_bb.row(0) = u0.cross(u0);
+    separating_axis_faces_bb.row(0) = u0.cross(f0);
     separating_axis_faces_bb.row(1) = u0.cross(f1);
     separating_axis_faces_bb.row(2) = u0.cross(f2);
 
@@ -101,7 +101,7 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
         // Project bounding box along separating axis
         // We only care about the extents of the box to project it along the axis!
         float extent_length = side_length/2;
-        float r = (std::abs(u0.dot(sep_axis)) + std::abs(u1.dot(sep_axis)) + std::abs(u2.dot(sep_axis)))*extent_length;
+        float r = (std::abs(extent_length*u0.dot(sep_axis)) + extent_length*std::abs(u1.dot(sep_axis)) + extent_length*std::abs(u2.dot(sep_axis)))*extent_length;
 
         // See if most extreme point of the triangle intersects r.
         // If we find an axis where this is not the case, there is a separating axis: intersection impossible.
@@ -121,12 +121,67 @@ void ConstructionNode::setAsNonLeaf() {
     isLeaf = false;
 }
 
-bool ConstructionNode::checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+bool ConstructionNode::checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,
+                                               const Eigen::MatrixX3f &vertices,
+                                               const Eigen::MatrixX3i &triangles) {
+    if(isLeaf){
+        if(!triangle_ids.empty()){
+            for(auto &t: triangle_ids){
+                // Loop over triangles to figure out if there exists an intersection
+            }
+        }
+    } else {
+        throw std::logic_error("Cannot check for intersection on non-leaf node!");
+    }
     return false;
 }
 
 bool
-ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center,
-                                    float box_side_length) {
+ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+    // Recenter edge vector first around center
+    Eigen::Vector3f p1_c = edge_origin - center;
+    Eigen::Vector3f p2_c = edge_end - center;
+    Eigen::Vector3f f0 = p2_c - p1_c;
+
+    // Let's apply again SAT
+
+    // Face normals of the bounding box (trivially the X, Y, Z axis)
+    Eigen::Vector3f u0(1,0,0);
+    Eigen::Vector3f u1(0,1,0);
+    Eigen::Vector3f u2(0,0,1);
+
+    Eigen::MatrixX3f separating_axis_faces_bb(6, 3);
+
+    separating_axis_faces_bb.row(0) = u0.cross(f0);
+    separating_axis_faces_bb.row(1) = u1.cross(f0);
+    separating_axis_faces_bb.row(2) = u2.cross(f0);
+
+    // Check if vector extents are aligned with bounding box along face normals of bounding box
+    separating_axis_faces_bb.row(3) = u0;
+    separating_axis_faces_bb.row(4) = u1;
+    separating_axis_faces_bb.row(5) = u2;
+
+    // Test on all face separating axis
+    for(int axis_i = 0; axis_i < 6; axis_i++ ) {
+        Eigen::Vector3f sep_axis = separating_axis_faces_bb.row(axis_i);
+
+        // Project all 2 vertices onto separating axis
+        float p0 = p1_c.dot(sep_axis);
+        float p1 = p2_c.dot(sep_axis);
+
+        // Project bounding box along separating axis
+        // We only care about the extents of the box to project it along the axis!
+        float extent_length = side_length/2;
+
+        // Note: here we consider the extent length as uniform across all axis. Because it can change, we are explictly multiplying each axis separately to allow easier change later
+        float r = (std::abs(extent_length* u0.dot(sep_axis)) + extent_length*std::abs(u1.dot(sep_axis)) + extent_length*std::abs(u2.dot(sep_axis)));
+
+        // See if most extreme point of the triangle intersects r.
+        // If we find an axis where this is not the case, there is a separating axis: intersection impossible.
+        if(std::max(-std::max({p0, p1}), std::min({p0, p1})) > r) {
+            return false;
+        }
+    }
+    // If all tests passed, we can return true: there exist no separating axis!
     return true;
 }
