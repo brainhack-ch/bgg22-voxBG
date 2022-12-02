@@ -5,13 +5,14 @@
 #ifndef GRAPH_ANALYSIS_OCTREE_H
 #define GRAPH_ANALYSIS_OCTREE_H
 #include <Eigen/Dense>
-
+#include "ConstructionNode.h"
+/*
 struct Node {
     bool is_leaf;
     unsigned int first_child_id;
     unsigned int n_children;
 };
-
+*/
 
 class Octree {
 private:
@@ -19,7 +20,7 @@ private:
     unsigned int max_triangles_per_leaf;
     float side_length;
     Eigen::Vector3f root_center;
-    std::vector<Node*> nodes;
+    std::vector<ConstructionNode*> nodes;
     std::vector<unsigned int> triangle_node_ids; // This array stores contiguously for each terminal leaf the indices of its triangles
     Eigen::MatrixX3f vertices; // Triangle vertices
     Eigen::MatrixX3i triangles; // Triangles of the mesh
@@ -62,25 +63,6 @@ public:
     unsigned int getNodeNumber();
 
     ~Octree();
-
-    /**
-     * Tests if an edge intersects with a triangle.
-     * @param edge_origin
-     * @param edge_end
-     * @return
-     */
-    static bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
-
-    /**
-     * Tests if an edge intersects with a square box.
-     * @param edge_origin
-     * @param edge_end
-     * @param box_center
-     * @param box_side_length
-     * @return
-     */
-    static bool checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length);
-
 };
 
 #endif //GRAPH_ANALYSIS_OCTREE_H
