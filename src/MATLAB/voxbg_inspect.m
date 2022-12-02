@@ -1,5 +1,5 @@
-function hb_inspect_graph(G,opts,nodes)
-%HB_INSPECT_GRAPH generates multiple plots for inspecting a voxBG graph
+function voxbg_inspect(G,opts,nodes)
+%VOXBG_INSPECT generates multiple plots for inspecting a voxBG graph
 %around specified input nodes or nodes selected interactively.
 %
 % Inputs:
