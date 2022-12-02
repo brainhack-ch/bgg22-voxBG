@@ -1,0 +1,33 @@
+=========================================================
+%To plot prunned edges: 
+%A0: pre-pruning A. 
+%App: post-pial-pruning A. 
+%Apw: post-white-pruning A. 
+
+markCleanedVoxelsPostPruning = true; %false 
+Adiffp = G.pruning.A_diff_pre_post_pial_pruning; 
+Adiffw = G.pruning.A_diff_pre_post_white_pruning; 
+Armd = G.pruning.A_removed_post_pruning; 
+indA = G.pruning.ind_pre_pruning_A_remained_post_pruning;
+I = G.pruning.indices_of_mask_cleaned_post_pruning;
+Apw = Adiffw-Adiffw;     %empty matrix 
+Apw(indA,indA) = G.A;    %place cleaned A 
+Apw(~indA,~indA) = Armd; %put back removed rows&columns 
+App = Apw+Adiffw;        %put back white-pruned edges 
+A0 = App+Adiffp;         %put back pial-pruned edges 
+hb_gunzip(G.f.mask); 
+mask = spm_read_vols(spm_vol(G.f.mask)); 
+if markCleanedVoxelsPostPruning 
+    d = find(mask); 
+    mask(d) = 2; 
+    mask(I) = 1; 
+end 
+sl = 88;       %axial slice number 
+d1 = 'grid'; %'diff','none' 
+d2 = true;     %false 
+d3 = {'r';'g'}; 
+figure; 
+A_pre = {A0;App}; 
+A_post = {App;Apw}; 
+hm_plot_adjacency_diff(A_pre,A_post,mask,sl,d1,d2,d3);
+=========================================================
