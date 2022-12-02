@@ -1,24 +1,33 @@
-function  [G,sts] = voxbg_get_struct(ID,gtype,opts)
+% Note to Mathieu: 
+%
+% [1] This function is related to building both CHC and WM voxBG. To start
+% with, just code the parts related to CHC voxBG. In the code below:
+% - CHC graph has G.tissue = 'gmlh' or 'gmrh'
+% - WM graph has G.tissue = 'wm'
+% As such, whereever there is a "Switch case .." statement, only transfer
+% the code under case {'gmlh','gmrh'}.
+% 
+% [2] Also skip parts inside the "if opts.also_get_files_related_to_fMRI"
+% statement. 
+
+function  G = voxbg_get_struct_mini(ID,gtype,opts)
 %VOXBG_GET_STRUCT creates G structure. If G exists, it is loaded and
 %verified, and if necessary, it's content is updated.
 %
 % Hamid Behjat
 
-if ~exist('justGf','var')
-    justGf = false;
-end
+opts.also_get_files_related_to_fMRI = false;
 
 if ~ischar(ID)
-    assert(isnumeric(ID),'ID should be either numeric or char')
     ID = num2str(ID);
 end
 
 hcp_root= opts.hcp_root;
 
-if ~isfield(opts,'hcpsave_root') || isempty(opts.hcpsave_root) % 20 jan 2021
+if ~isfield(opts,'hcpsave_root') || isempty(opts.hcpsave_root)
     hcpsave_root = hcp_root;
 else
-    hcpsave_root = opts.hcpsave_root; % 14 April 2020. Save MATLAB results on local. Then transfer to remote using rsync.
+    hcpsave_root = opts.hcpsave_root;
 end
 
 G = struct;
@@ -29,11 +38,11 @@ d = strfind(gtype,'.res');
 G.tissue = gtype(1:d-1);
 
 switch G.tissue
-    case {'gmlh','wmlh','pslh','wslh'}
+    case 'gmlh'
         G.hemisphere = 'left';
-    case {'gmrh','wmrh','psrh','wsrh'}
+    case 'gmrh'
         G.hemisphere = 'right';
-    case {'gm','wm','cerebrum'}
+    case 'wm'
         G.hemisphere = 'both';
 end
 
@@ -115,7 +124,7 @@ switch G.tissue
 end
 
 G.f = [];
-f = struct; 
+f = struct;
 
 %-Directories--------------------------------------------------------------
 f.hcp_root = hcp_root;
@@ -127,14 +136,8 @@ f.T1w_results_save = fullfile(f.T1w_save,'Results');
 f.MNI_save         = fullfile(hcpsave_root,ID,'MNINonLinear');
 f.MNI_results      = fullfile(f.MNI,'Results');
 f.MNI_results_save = fullfile(f.MNI_save,'Results');
-f.graphmain        = fullfile(f.T1w_save,'graph'); 
+f.graphmain        = fullfile(f.T1w_save,'graph');
 f.graph            = fullfile(f.graphmain,strrep(gtype,'.','_'));
-switch G.tissue
-    case {'pslh','psrh','wslh','wsrh'}
-        if G.weighted
-            f.graph = [f.graph,'_weighted'];
-        end
-end
 [~,~] = mkdir(f.T1w_save); % outputs set to prevent warnings
 [~,~] = mkdir(f.MNI_save);
 [~,~] = mkdir(f.MNI_results_save);
@@ -210,79 +213,83 @@ for iFN=1:length(fn)
     end
 end
 
-%-Mapping files------------------------------------------------------------
-f.xfms = fullfile(f.MNI,'xfms');
-f.xfms_save = fullfile(f.MNI_save,'xfms');
-[~,~] = mkdir(f.xfms_save);
 
-% Displacement field for mapping from MNI to ACPC
-f.disp_mni2acpc = fullfile(f.xfms,'standard2acpc_dc.nii');
-
-% Displacement field for mapping from ACPC to MNI
-f.disp_acpc2mni = fullfile(f.xfms,'acpc_dc2standard.nii');
-
-%-Preprocessed fMRI volumes in MNI space-----------------------------------
-% address to fMRI data that
-% have been coregistered
-% with graph.
-
-%d = load('tasks9_LR.mat','tasks');
-%taskSets{1} = d.tasks;
-
-taskSets{1} = [
-    {'tfMRI_EMOTION_LR'   }
-    {'tfMRI_GAMBLING_LR'  }
-    {'tfMRI_LANGUAGE_LR'  }
-    {'tfMRI_MOTOR_LR'     }
-    {'tfMRI_RELATIONAL_LR'}
-    {'tfMRI_SOCIAL_LR'    }
-    {'tfMRI_WM_LR'        }
-    {'rfMRI_REST1_LR'     }
-    {'rfMRI_REST2_LR'     }];
-
-%d = load('tasks9_RL.mat','tasks');
-%taskSets{2} = d.tasks;
-
-taskSets{2} = [
-    {'tfMRI_EMOTION_RL'   }
-    {'tfMRI_GAMBLING_RL'  }
-    {'tfMRI_LANGUAGE_RL'  }
-    {'tfMRI_MOTOR_RL'     }
-    {'tfMRI_RELATIONAL_RL'}
-    {'tfMRI_SOCIAL_RL'    }
-    {'tfMRI_WM_RL'        }
-    {'rfMRI_REST1_RL'     }
-    {'rfMRI_REST2_RL'     }];
-
-for iS=1:2
-    tasks = taskSets{iS}; 
-    for t = 1:length(tasks)
-        task = tasks{t};
-        n = [task '.nii'];
-        f.fmri_mni.(task)      = fullfile(f.MNI_results,task,n);               % on original volume
-        f.fmri_mni_save.(task) = fullfile(f.MNI_results_save,task,n);          % on writable volume
+if opts.also_get_files_related_to_fMRI
+    %-Mapping files------------------------------------------------------------
+    f.xfms = fullfile(f.MNI,'xfms');
+    f.xfms_save = fullfile(f.MNI_save,'xfms');
+    [~,~] = mkdir(f.xfms_save);
+    
+    % Displacement field for mapping from MNI to ACPC
+    f.disp_mni2acpc = fullfile(f.xfms,'standard2acpc_dc.nii');
+    
+    % Displacement field for mapping from ACPC to MNI
+    f.disp_acpc2mni = fullfile(f.xfms,'acpc_dc2standard.nii');
+    
+    
+    %-Preprocessed fMRI volumes in MNI space-------------------------------
+    % address to fMRI data that
+    % have been coregistered
+    % with graph.
+    
+    %d = load('tasks9_LR.mat','tasks');
+    %taskSets{1} = d.tasks;
+    
+    taskSets{1} = [
+        {'tfMRI_EMOTION_LR'   }
+        {'tfMRI_GAMBLING_LR'  }
+        {'tfMRI_LANGUAGE_LR'  }
+        {'tfMRI_MOTOR_LR'     }
+        {'tfMRI_RELATIONAL_LR'}
+        {'tfMRI_SOCIAL_LR'    }
+        {'tfMRI_WM_LR'        }
+        {'rfMRI_REST1_LR'     }
+        {'rfMRI_REST2_LR'     }];
+    
+    %d = load('tasks9_RL.mat','tasks');
+    %taskSets{2} = d.tasks;
+    
+    taskSets{2} = [
+        {'tfMRI_EMOTION_RL'   }
+        {'tfMRI_GAMBLING_RL'  }
+        {'tfMRI_LANGUAGE_RL'  }
+        {'tfMRI_MOTOR_RL'     }
+        {'tfMRI_RELATIONAL_RL'}
+        {'tfMRI_SOCIAL_RL'    }
+        {'tfMRI_WM_RL'        }
+        {'rfMRI_REST1_RL'     }
+        {'rfMRI_REST2_RL'     }];
+    
+    for iS=1:2
+        tasks = taskSets{iS};
+        for t = 1:length(tasks)
+            task = tasks{t};
+            n = [task '.nii'];
+            f.fmri_mni.(task)      = fullfile(f.MNI_results,task,n);               % on original volume
+            f.fmri_mni_save.(task) = fullfile(f.MNI_results_save,task,n);          % on writable volume
+        end
     end
-end
-
-%-Resliced fMRI volumes that have 1-to-1 voxel macth with G.f.mask---------
-% address to fMRI data that have been coregistered with graph.
-for iS=1:2
-    tasks = taskSets{iS};
-    for t = 1:length(tasks)
-        task = tasks{t};
-        n = [task,G.rsTag,'.nii'];
-        f.fmri_graph.(task) = fullfile(f.T1w_results_save,task,n);
+    
+    %-Resliced fMRI volumes that have 1-to-1 voxel macth with G.f.mask-----
+    % address to fMRI data that have been coregistered with graph.
+    for iS=1:2
+        tasks = taskSets{iS};
+        for t = 1:length(tasks)
+            task = tasks{t};
+            n = [task,G.rsTag,'.nii'];
+            f.fmri_graph.(task) = fullfile(f.T1w_results_save,task,n);
+        end
     end
-end
-
-%-fMRI graph signals-------------------------------------------------------
-% signals extracted from graph coregistered fMRI volumes.
-for iS=1:2
-    tasks = taskSets{iS};
-    for t = 1:length(tasks)
-        task = tasks{t};
-        n = ['G.',G.type,'.signals_',task,'.mat'];
-        f.signals.(task) = fullfile(f.graph,n);
+    
+    %-fMRI graph signals---------------------------------------------------
+    % signals extracted from graph coregistered fMRI volumes.
+    for iS=1:2
+        tasks = taskSets{iS};
+        for t = 1:length(tasks)
+            task = tasks{t};
+            n = ['G.',G.type,'.signals_',task,'.mat'];
+            f.signals.(task) = fullfile(f.graph,n);
+        end
     end
 end
 
@@ -290,45 +297,4 @@ G.f = f;
 
 G.fname = fullfile(f.graph,['G.',G.type,'.mat']);
 
-if justGf
-    sts = 'just G.f returned';
-   return; 
-end
-
-if exist(G.fname,'file')
-    d = load(G.fname);
-    if isfield(d.G,'A') && isfield(d.G,'indices')
-        G_ld = d.G;
-        sts = 'loaded';
-    else
-        sts = 'new';
-    end
-else
-    sts = 'new';
-end
-
-if strcmp(sts,'loaded')
-    %-Update paths?
-    % current machine may differ from that used when saving G.
-    if isequal(G_ld.f,G.f)
-        G = G_ld;
-    else
-        if isfield(G_ld.f,'odf')
-            Gfodf = G_ld.f.odf; % G.f.odf is not defined in hb_get_G.m, but rather in hb_adjacencymatrix_diffusion.m. Therefore, it will result in a mistmatch if checked, so, we reomve it, check the rest of G.f, and we then replace it.
-            G_ld.f = rmfield(G_ld.f,'odf');
-            PutBackGfodf = true;
-        else
-            PutBackGfodf = false;
-        end
-        if isequal(G_ld.f,G.f)
-            G = G_ld;
-        else
-            G_ld.f = G.f;
-            G = G_ld;
-        end
-        if PutBackGfodf
-            G.f.odf = Gfodf; % put back
-        end
-    end
-end
 end

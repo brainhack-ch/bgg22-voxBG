@@ -2,7 +2,7 @@ clc
 clear 
 close all
 
-which_graph = 1;
+which_graph = 6;
 path_spm12  = []; 
 
 %-Plot settings.
@@ -20,8 +20,9 @@ opts.atom_colormap    = 'inferno'; %'inferno', 'hot', 'RdBu', 'fslRender3', 'pin
 opts.plotType         = 'imagesc'; %'imagesc', 'contour'
 opts.plane            = 'axial';
 opts.slice            = 70;
-opts.bbwidth          = 21;
-opts.tau              = 7;
+opts.bbwidth          = 31;
+opts.kernel           = [];
+opts.tau              = []; %7
 opts.flipColormap     = false;
 opts.GaussianFWHM     = []; % 4,6,.. or [] to skip
 opts.MaskedGaussian   = 1; % also plot masked Gaussian?
@@ -45,9 +46,10 @@ gtypes = {
     'gmrh.res2000.spaceT1w' % rh ...
     'gmlh.res1250.spaceT1w' 
     'gmrh.res1250.spaceT1w' 
+    'wm.res1250.spaceDiffusion.neighb5.pow1.fibs5.rempar1.sh0.th0.soliangshAverageuniform'
+    'wm.res1250.spaceDiffusion.neighb5.pow1.fibs5.rempar1.sh8.th90.beta50.mag0.soliangshAverageuniform.onlywm1'
     };
 gtype = gtypes{which_graph};
-
 
 d_scr     = fileparts(mfilename('fullpath'));
 d_demos   = fileparts(d_scr);
@@ -76,6 +78,19 @@ G = d.G;
 %-Visualize voxBG.
 %--------------------------------------------------------------------------
 loadODfs = false; % ok if false, but makes recalling hb_inspect_graph after a change to opts fileds slow
+showODFs = false;
+showAtoms = false; 
+
+switch which_graph
+    case 6
+    %f_odf = fullfile(d_graph,'wm.onlywm1.odfs.src.gz.odf8.f5rec.bal.012fy.rdi.gqi.1.25.mat');
+    f_odf = fullfile(d_graph,'odfs.mat');
+    otherwise
+        error('');
+end
+
+opts.showODFs = showODFs;
+opts.showAtoms = showAtoms;
 
 d = fullfile(d_savefigs,strrep(gtype,'.','_'));
 opts.d_savefigs = d;
@@ -84,6 +99,9 @@ if ~exist(d,'dir')
 end
 
 if loadODfs
+    d = load(f_odf);
+    d.odf;
+    
     d = load(G.f.odf.fib_mat,'odf').odf;
     if size(d,2)~=G.N
         d = d(:,G.pruning.ind_pre_pruning_A_remained_post_pruning);

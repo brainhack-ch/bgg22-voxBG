@@ -35,7 +35,7 @@
 %       UnderlayColormap - the colormap of the underlay.
 %--------------------------------------------------------------------------
 
-function [axa,axu,abb] = hb_plot_atom(G,node,plane,varargin)
+function [axa,axu,abb] = voxbg_plot_atom(G,node,plane,varargin)
 
     p = inputParser;
     addRequired(p,'G');

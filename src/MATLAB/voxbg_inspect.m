@@ -73,7 +73,7 @@ if isempty(nodes) % interactively select node(s)
         '+ realization of an atom']);
     set(gcf,...
         'Position',[800,10,1000,1000]);
-
+    
 else % use given nodes
     buildplots(G,opts,nodes);
 end
@@ -222,14 +222,16 @@ for iG=1:Ng
     end
     
     % odfs
-    if not(isfield(opts,'odfs'))
-        d = load(G.f.odf.fib_mat,'odf').odf;
-        if size(d,2)~=G.N
-            d = d(:,G.pruning.ind_pre_pruning_A_remained_post_pruning);
-            assert(size(d,2)==G.N);
+    if opts.showODFs
+        if not(isfield(opts,'odfs'))
+            d = load(G.f.odf.fib_mat,'odf').odf;
+            if size(d,2)~=G.N
+                d = d(:,G.pruning.ind_pre_pruning_A_remained_post_pruning);
+                assert(size(d,2)==G.N);
+            end
+            opts.odfs = repmat(d,2,1);
+            opts.vertices = load(G.f.odf.fib_mat,'odf_vertices').odf_vertices;
         end
-        opts.odfs = repmat(d,2,1);
-        opts.vertices = load(G.f.odf.fib_mat,'odf_vertices').odf_vertices;
     end
     
     % underlay
@@ -250,9 +252,9 @@ for iG=1:Ng
         case 'fslRender3'
             opts.atom_colormap = load('colormap_fsl_render3.mat').LUT;
         otherwise
-            % good to go; potentially should have addpathed. 
+            % good to go; potentially should have addpathed.
     end
-
+    
     % update
     GG{iG} = G;
     
@@ -327,7 +329,7 @@ for iG=1:Ng
     opts = OPTS{iG};
     
     nodes = NODES{iG};
-
+    
     Nn = length(nodes);
     
     bbw = opts.bbwidth;
@@ -341,7 +343,7 @@ for iG=1:Ng
     else
         figtag = sprintf('graph:%d, ',iG);
     end
-
+    
     %-Plot reference image-------------------------------------------------
     if opts.plot_ref
         
@@ -481,8 +483,12 @@ for iG=1:Ng
                 % without underlay.
                 % [since the underlay apparently masks ODFs that are
                 % perpendicular to the 2D slice]
-                ml_plot_odfs_box(G,node,opts.plane,opts.odfs,opts.vertices,...
-                    'BBWidth',opts.bbwidth,'Underlay',[]);
+                if opts.showODFs
+                    ml_plot_odfs_box(G,node,opts.plane,opts.odfs,opts.vertices,...
+                        'BBWidth',opts.bbwidth,'Underlay',[]);
+                else
+                    
+                end
                 
                 if opts.saveFigs
                     print(hfodf{iN},fullfile(d_figs,...
@@ -611,22 +617,24 @@ for iG=1:Ng
                     opts.axis_gaussian_masked = [];
                 end
             end
-            [~,~,ABB{iN}] = hb_plot_atom(G,node,opts.plane,...
-                'BBWidth',bbw,...
-                'Underlay',opts.underlay,...
-                'Alpha',opts.Alpha,...
-                'Tau',opts.tau,...
-                'plotType',opts.plotType,...
-                'Colormap',opts.atom_colormap,...
-                'ChebOrd',opts.ChebOrd,...
-                'kernel',opts.kernel,...
-                'GaussianFWHM',opts.GaussianFWHM,...
-                'AlsoPlotMaskedGaussian',opts.MaskedGaussian,...
-                'flipColormap',opts.flipColormap,...
-                'axis_atom',opts.axis_atom,...
-                'axis_gaussian',opts.axis_gaussian,...
-                'axis_gaussian_masked',opts.axis_gaussian_masked);
-            axis equal
+            if opts.showAtoms
+                [~,~,ABB{iN}] = voxbg_plot_atom(G,node,opts.plane,...
+                    'BBWidth',bbw,...
+                    'Underlay',opts.underlay,...
+                    'Alpha',opts.Alpha,...
+                    'Tau',opts.tau,...
+                    'plotType',opts.plotType,...
+                    'Colormap',opts.atom_colormap,...
+                    'ChebOrd',opts.ChebOrd,...
+                    'kernel',opts.kernel,...
+                    'GaussianFWHM',opts.GaussianFWHM,...
+                    'AlsoPlotMaskedGaussian',opts.MaskedGaussian,...
+                    'flipColormap',opts.flipColormap,...
+                    'axis_atom',opts.axis_atom,...
+                    'axis_gaussian',opts.axis_gaussian,...
+                    'axis_gaussian_masked',opts.axis_gaussian_masked);
+                axis equal
+            end
         end
         
         if opts.plotForColorbar
@@ -671,86 +679,87 @@ for iG=1:Ng
         
     end
     
-    % Plot tissue mask(s)------------------------------------------------------
-    if opts.plotTissueMasks
-        for iN = 1:Nn
-            node = nodes(iN);
-            inode = G.indices(node);
-            abb = ABB{iN};
-            hf_mask = figure;
-            set(hf_mask,...
-                'Position',[700 430 300 300],...
-                'Name',sprintf('%snode:%d, neighb:%d',figtag,iN,G.neighb),...
-                'MenuBar',opts.FigMenuBar,...
-                'NumberTitle',FigNumberTitle);
-            switch G.tissue
-                case 'cerebrum'
-                    if iN==1
-                        h_gm = spm_vol(G.f.mask_gm);
-                        h_wm = spm_vol(G.f.mask_wm);
-                        v_gm = spm_read_vols(h_gm);
-                        v_wm = spm_read_vols(h_wm);
-                    end
-                    d1 = double(squeeze(v_gm(abb{1},abb{2},abb{3})))*0.5;
-                    d2 = double(squeeze(v_wm(abb{1},abb{2},abb{3})));
-                    chk = intersect(find(d1(:)),find(d2(:)));
-                    assert(isempty(chk),'fishy: GM & WM masks intersect.');
-                    v = d1+d2; % WM: 1 - GM: 0.5
-                    if ismember(inode,find(v_gm))
-                        nodeTissue = 'gm';
-                    else
-                        nodeTissue = 'wm';
-                    end
-                case {'wm','wmlh','wmrh','gm','gmlh','gmrh'}
-                    v = spm_read_vols(spm_vol(G.f.mask));
-                    v = double(squeeze(v(abb{1},abb{2},abb{3})));
-                    switch G.tissue
-                        case {'wm','wmlh','wmrh'}
-                            nodeTissue = 'wm';
-                        case {'gm','gmlh','gmrh'}
+    if opts.showAtoms
+        % Plot tissue mask(s)------------------------------------------------------
+        if opts.plotTissueMasks
+            for iN = 1:Nn
+                node = nodes(iN);
+                inode = G.indices(node);
+                abb = ABB{iN};
+                hf_mask = figure;
+                set(hf_mask,...
+                    'Position',[700 430 300 300],...
+                    'Name',sprintf('%snode:%d, neighb:%d',figtag,iN,G.neighb),...
+                    'MenuBar',opts.FigMenuBar,...
+                    'NumberTitle',FigNumberTitle);
+                switch G.tissue
+                    case 'cerebrum'
+                        if iN==1
+                            h_gm = spm_vol(G.f.mask_gm);
+                            h_wm = spm_vol(G.f.mask_wm);
+                            v_gm = spm_read_vols(h_gm);
+                            v_wm = spm_read_vols(h_wm);
+                        end
+                        d1 = double(squeeze(v_gm(abb{1},abb{2},abb{3})))*0.5;
+                        d2 = double(squeeze(v_wm(abb{1},abb{2},abb{3})));
+                        chk = intersect(find(d1(:)),find(d2(:)));
+                        assert(isempty(chk),'fishy: GM & WM masks intersect.');
+                        v = d1+d2; % WM: 1 - GM: 0.5
+                        if ismember(inode,find(v_gm))
                             nodeTissue = 'gm';
-                    end
-                otherwise
-                    error('extend.')
+                        else
+                            nodeTissue = 'wm';
+                        end
+                    case {'wm','wmlh','wmrh','gm','gmlh','gmrh'}
+                        v = spm_read_vols(spm_vol(G.f.mask));
+                        v = double(squeeze(v(abb{1},abb{2},abb{3})));
+                        switch G.tissue
+                            case {'wm','wmlh','wmrh'}
+                                nodeTissue = 'wm';
+                            case {'gm','gmlh','gmrh'}
+                                nodeTissue = 'gm';
+                        end
+                    otherwise
+                        error('extend.')
+                end
+                switch nodeTissue
+                    case 'wm'
+                        cl = [0 0 1];
+                    case 'gm'
+                        cl = [0 1 0];
+                end
+                switch opts.plane % note1, see below.
+                    case 1
+                        error('extend.');
+                    case 2
+                        error('extend.');
+                    case 3
+                        v = rot90(v,2);
+                        v = v';
+                end
+                imagesc(v); % if alpha needed, see hb_plot_atom.m: ,'AlphaData',?);
+                colormap gray;
+                hold on;
+                d = bbw/2;
+                rectangle('position',[d,d,1,1],...
+                    'EdgeColor','none',...
+                    'FaceColor',cl);
+                axis image;
+                xticks([]);
+                yticks([]);
+                caxis([0 1]); % note2, see below
+                %
+                % note1:
+                % this is sloppy, and not necesarily correct for dofferent plane
+                % settings; the way the atom is created and plotted (in
+                % hb_plot_atom.m) is not informed by spm_vol(G.f.mask).dim, and
+                % thus I am doing a messy fix here.
+                %
+                % note2: to ensure GM always shown as gray even if all voxel within
+                % bounding-box are part of mask.
             end
-            switch nodeTissue
-                case 'wm'
-                    cl = [0 0 1];
-                case 'gm'
-                    cl = [0 1 0];
-            end
-            switch opts.plane % note1, see below.
-                case 1
-                    error('extend.');
-                case 2
-                    error('extend.');
-                case 3
-                    v = rot90(v,2);
-                    v = v';
-            end
-            imagesc(v); % if alpha needed, see hb_plot_atom.m: ,'AlphaData',?);
-            colormap gray;
-            hold on;
-            d = bbw/2;
-            rectangle('position',[d,d,1,1],...
-                'EdgeColor','none',...
-                'FaceColor',cl);
-            axis image;
-            xticks([]);
-            yticks([]);
-            caxis([0 1]); % note2, see below
-            %
-            % note1:
-            % this is sloppy, and not necesarily correct for dofferent plane
-            % settings; the way the atom is created and plotted (in
-            % hb_plot_atom.m) is not informed by spm_vol(G.f.mask).dim, and
-            % thus I am doing a messy fix here.
-            %
-            % note2: to ensure GM always shown as gray even if all voxel within
-            % bounding-box are part of mask.
         end
     end
-    
     % Plot subset of ODFs------------------------------------------------------
     % Ploting only a subset of ODFs within the 2D slice.
     if opts.plot_odf_subset
