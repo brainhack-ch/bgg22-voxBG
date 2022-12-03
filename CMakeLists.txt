@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22)
 project(graph_analysis)
 include(cmake-scripts/code-coverage.cmake)
 

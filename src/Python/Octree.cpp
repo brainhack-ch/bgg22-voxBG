@@ -178,7 +178,7 @@ bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edg
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(octree, m) {
+PYBIND11_MODULE(graphPrunerLib, m) {
     py::class_<Octree>(m, "Octree").def(py::init<float, unsigned int, unsigned int>())
              .def("initialize", &Octree::init_octree)
              .def("checkEdgeIntersection", &Octree::isEdgeIntersecting);

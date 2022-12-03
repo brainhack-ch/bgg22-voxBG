@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include "gmock/gmock.h"
 #include "utils.h"
+#include <chrono>
+using namespace std::chrono;
 
 using ::testing::Return;
 
@@ -429,22 +431,33 @@ TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
     // Figure out maximal x2 we need
     Eigen::Vector3f max_x(mat_vertices.col(0).maxCoeff(), mat_vertices.col(1).maxCoeff(), mat_vertices.col(2).maxCoeff());
 
+    std::cout << "Counting " << triangle_indices.rows() << " triangles in the mesh." << std::endl;
     // Determine center and length based on those
     Eigen::Vector3f center = (max_x + min_x) / 2.0;
     /*Eigen::Vector3f center;
     center << 0, 0, 0;*/
     float parent_length = (max_x - min_x).norm()/std::sqrt(2);
 
+    auto start = high_resolution_clock::now();
     Octree octree(parent_length, 10, center, mat_vertices, triangle_indices, 20);
+    auto end_init = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end_init - start);
+
+    auto init_duration = duration_cast<seconds>(end_init - start);
+    std::cout << "Octree initialization took " << init_duration.count() << " seconds" << std::endl;
     EXPECT_FALSE(octree.isRootLeaf());
     // The root does not count as a node
     EXPECT_NE(octree.getNodeNumber(), 0);
-    std::cout << octree.getNodeNumber() << std::endl;
+    std::cout << "Counting " << octree.getNodeNumber() << " nodes after subdivision." << std::endl;
 
     for(int i=0; i < edges_indices.rows(); ++i){
         Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
         Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
-        std::cout << octree.isEdgeIntersecting(edge_origin, edge_end) << std::endl;
+        start = high_resolution_clock::now();
+        std::cout << (octree.isEdgeIntersecting(edge_origin, edge_end) ? "Edge intersecting." : "Edge not intersecting.");
+        end_init = high_resolution_clock::now();
+        duration = duration_cast<microseconds>(end_init - start);
+        std::cout << " Took " << duration.count() << " microseconds to query octree." << std::endl;
         //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
 
     }
