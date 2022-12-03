@@ -69,10 +69,8 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
                 // Update last_i
                 last_i = nodes.size();
             }
-
             // Go to next node
             current_i += 1;
-
         }
     }
 
@@ -105,12 +103,22 @@ Octree::~Octree(){
 
 bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
     bool intersect = false;
-    std::stack<ConstructionNode*> node_stack;
 
-    if(true /* check root intersection: assume here there is an intersection*/){
+    // Is the edge intersecting with the root ?
+    if(ConstructionNode::boxToEdgeIntersection(edge_origin, edge_end, root_center, side_length)){
+        std::stack<ConstructionNode*> node_stack;
+
         // Test against all triangles directly
         if(is_root_leaf){
-
+            for(auto &t: triangle_node_ids){
+                // Loop over triangles to figure out if there exists an intersection
+                std::vector<int> ind(triangles.row(t).begin(), triangles.row(t).end());
+                // Check with this triangle's vertices coordinates if there is indeed an intersection
+                if(ConstructionNode::checkTriangleIntersect(edge_origin, edge_end, vertices(ind, Eigen::placeholders::all))){
+                    intersect=true;
+                    break;
+                }
+            }
         } else {
             // Test against children: perform BFS
             for(int i=0; i < 8; ++i){

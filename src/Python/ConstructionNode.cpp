@@ -147,11 +147,10 @@ bool ConstructionNode::checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eige
     return false;
 }
 
-bool
-ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+bool ConstructionNode::boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length){
     // Recenter edge vector first around center
-    Eigen::Vector3f p1_c = edge_origin - center;
-    Eigen::Vector3f p2_c = edge_end - center;
+    Eigen::Vector3f p1_c = edge_origin - box_center;
+    Eigen::Vector3f p2_c = edge_end - box_center;
     Eigen::Vector3f f0 = p2_c - p1_c;
 
     // Let's apply again SAT
@@ -172,6 +171,9 @@ ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f
     separating_axis_faces_bb.row(4) = u1;
     separating_axis_faces_bb.row(5) = u2;
 
+    float extent_length = box_side_length/2;
+
+
     // Test on all face separating axis
     for(int axis_i = 0; axis_i < 6; axis_i++ ) {
         Eigen::Vector3f sep_axis = separating_axis_faces_bb.row(axis_i);
@@ -182,7 +184,6 @@ ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f
 
         // Project bounding box along separating axis
         // We only care about the extents of the box to project it along the axis!
-        float extent_length = side_length/2;
 
         // Note: here we consider the extent length as uniform across all axis. Because it can change, we are explictly multiplying each axis separately to allow easier change later
         float r = (std::abs(extent_length* u0.dot(sep_axis)) + extent_length*std::abs(u1.dot(sep_axis)) + extent_length*std::abs(u2.dot(sep_axis)));
@@ -195,6 +196,11 @@ ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f
     }
     // If all tests passed, we can return true: there exist no separating axis!
     return true;
+}
+
+bool
+ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+    return boxToEdgeIntersection(edge_origin, edge_end, center, side_length);
 }
 
 bool ConstructionNode::checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,

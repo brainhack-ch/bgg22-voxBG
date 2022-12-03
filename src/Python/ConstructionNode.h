@@ -52,7 +52,7 @@ public:
      * @param triangle_vertices
      * @return
      */
-    bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::Matrix3f &triangle_vertices);
+    static bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::Matrix3f &triangle_vertices);
 
     /**
      * Tests if an edge intersects with a square box.
@@ -63,6 +63,8 @@ public:
      * @return
      */
     bool checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
+
+    static bool boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length);
 
 };
 
