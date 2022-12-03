@@ -5,6 +5,7 @@
 #include <queue>
 #include <numeric>
 #include "Octree.h"
+#include <stack>
 
 /*
  * TODO: ADD MAX SUBDIVISION LEVEL
@@ -103,6 +104,34 @@ Octree::~Octree(){
 }
 
 bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+    bool intersect = false;
+    std::stack<ConstructionNode*> node_stack;
+
+    if(true /* check root intersection: assume here there is an intersection*/){
+        // Test against all triangles directly
+        if(is_root_leaf){
+
+        } else {
+            // Test against children: perform BFS
+            for(int i=0; i < 8; ++i){
+                node_stack.push(nodes.at(i));
+            }
+
+            while(!node_stack.empty() || !intersect){
+                ConstructionNode *c_node = node_stack.top();
+                node_stack.pop();
+                if(c_node->isLeaf){
+                    intersect = c_node->checkTrianglesIntersect(edge_origin, edge_end, vertices, triangles);
+                } else {
+                    if(c_node->checkBoxIntersect(edge_origin, edge_end) && c_node->leafid != 0){
+                        for(int i=0; i < 8; ++i){
+                            node_stack.push(nodes.at(i+c_node->leafid));
+                        }
+                    }
+                }
+            }
+        }
+    }
     // Perform DFS traversal of the nodes and query everytime
-    return false;
+    return intersect;
 }
