@@ -44,4 +44,4 @@ data = img_resampled.get_fdata()
 data[np.where(label != keep)] = 0
 img_resampled = new_img_like(img_resampled, data=data, copy_header=True)
 
-# compute adjacency of the voxels selected and resampled
+# compute adjacency and coordinate of each node
