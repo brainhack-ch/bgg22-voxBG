@@ -129,9 +129,10 @@ bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edg
                 node_stack.push(nodes.at(i));
             }
 
-            while(!node_stack.empty() || !intersect){
+            while(!node_stack.empty()  &&  !intersect){
                 ConstructionNode *c_node = node_stack.top();
                 node_stack.pop();
+
                 if(c_node->isLeaf){
                     intersect = c_node->checkTrianglesIntersect(edge_origin, edge_end, vertices, triangles);
                 } else {
@@ -141,6 +142,7 @@ bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edg
                         }
                     }
                 }
+
             }
         }
     }
