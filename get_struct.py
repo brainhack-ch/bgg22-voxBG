@@ -92,27 +92,3 @@ if not file_surf_white.exists():
     # copy(d1,[d2, d3]) to file_surf_white
 
 # G.fname is equal to file_G
-
-# ------------------------------------------------------------------------
-# we are done with get_struct
-# source_file
-# folder_t1w_save
-# unzip source_file in folder_t1w_save, probably not needed as we should be
-# able to diretly load compressed formats
-
-# and now f_src = source_file
-
-def pvt_tissue_from_ribbonOraparcaseg(f_base, opts, chk, f_o):
-    tissue = opts[0]
-    res = opts[1]
-
-    # skip if file exists
-    if not chk and f_o.exists():
-        return
-
-    f_tmp = f_o.parent / "temp.nii"
-
-    # read image
-    nib.load(f_base)
-
-pvt_tissue_from_ribbonOraparcaseg(source_file, (tissue, res), 1, mask)
