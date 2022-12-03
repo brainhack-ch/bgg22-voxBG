@@ -10,6 +10,9 @@
 ConstructionNode::ConstructionNode(Eigen::Vector3f parent_center, unsigned int node_space_id,
                                    float side_length_parent): isLeaf(true), leafid(0),
                                    side_length(side_length_parent/2) {
+    if(node_space_id >= 8){
+        throw std::invalid_argument("Node space ID can only be between 0 and 7 for an octree.");
+    }
     // Decide the center here
     // We must construct the X, Y and Z displacement
     if(abs(side_length_parent) < 10e-14 || side_length_parent < 0){

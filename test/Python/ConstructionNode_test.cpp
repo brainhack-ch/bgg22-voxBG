@@ -5,6 +5,9 @@
 #include "Python/ConstructionNode.h"
 #include <gtest/gtest.h>
 #include "gmock/gmock.h"
+#include <iostream>
+#include <string>
+#include <fstream>
 
 using ::testing::Return;
 
@@ -316,4 +319,73 @@ TEST_F(ConstructionNodeTest, triangleIntersectingButOutsideTest){
     Eigen::Vector3f p3;
     p3 << -4, 3.4, 30;
     EXPECT_TRUE(node.checkTriangleInBox(p1, p2, p3));
+}
+
+int split_face_str_and_convert_int(std::string input_str){
+    return std::stoi(input_str.substr(0, input_str.find('/')));
+}
+
+
+TEST_F(ConstructionNodeTest, detectionOfTriangleInCaseOfSeveralTriangles){
+    std::ifstream file("/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/subcube_config.obj");
+    std::string v, valuesX, valuesY, valuesZ;
+    std::vector<Eigen::Vector3f> vertices;
+    std::vector<Eigen::Vector3i> faces;
+
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            // using printf() in all tests for consistency
+            std::istringstream iss(line);
+            iss >> v >> valuesX >> valuesY >> valuesZ;
+            if(v == "v"){
+                Eigen::Vector3f vec(std::stof(valuesX), std::stof(valuesY), std::stof(valuesZ));
+                vertices.push_back(vec);
+            } else {
+                if(v == "f"){
+                    Eigen::Vector3i face(split_face_str_and_convert_int(valuesX)-1,
+                                         split_face_str_and_convert_int(valuesY)-1,
+                                         split_face_str_and_convert_int(valuesZ)-1);
+                    faces.push_back(face);
+                }
+            }
+            //std::cout << v << " " << valuesX[0] << " " << valuesY[0] << " " << valuesZ[0] << std::endl;
+        }
+        file.close();
+    } else {
+        std::cout << "Could not open file?!" << std::endl;
+        throw std::logic_error("Could not open file, check your path");
+    }
+
+    // Now allocate our dear matrix!
+    Eigen::MatrixX3f mat_vertices(vertices.size(), 3);
+    Eigen::MatrixX3i triangle_indices(faces.size(), 3);
+
+    for(int i=0;  i < vertices.size(); ++i){
+        mat_vertices.row(i) = vertices.at(i);
+    }
+
+    for(int i=0;  i < faces.size(); ++i){
+        triangle_indices.row(i) = faces.at(i);
+    }
+
+    //std::cout << mat_vertices << std::endl;
+    //std::cout << triangle_indices << std::endl;
+
+    // Now let's create a sub node. From Blender, we can have some expectation as to how many triangles will fall within!
+    Eigen::Vector3f center;
+    center << 0, 0, 0;
+    float parent_length = 2.0f;
+    std::vector<int> indices_of_interest;
+    for(int i=0; i < faces.size();++i){
+        indices_of_interest.push_back(i);
+    }
+
+    int expected_triangles_per_sub_cube[8] = {2,  2,  2, 4, 0, 0, 1, 0};
+
+    for(int i=0; i < 8; ++i){
+        ConstructionNode node(center, i, parent_length);
+        node.insertTriangles(mat_vertices, triangle_indices, indices_of_interest);
+        EXPECT_EQ(node.triangle_ids.size(), expected_triangles_per_sub_cube[i]);
+    }
 }
