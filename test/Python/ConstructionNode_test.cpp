@@ -328,8 +328,8 @@ TEST_F(ConstructionNodeTest, detectionOfTriangleInCaseOfSeveralTriangles){
     std::vector<Eigen::Vector3f> vertices;
     std::vector<Eigen::Vector3i> faces;
 
-    read_and_populate_from_obj_file(&vertices, &faces,
-                                    "/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/subcube_config.obj");
+    read_and_populate_faces_from_obj_file(&vertices, &faces,
+                                          "/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/subcube_config.obj");
 
     // Now allocate our dear matrix!
     Eigen::MatrixX3f mat_vertices(vertices.size(), 3);

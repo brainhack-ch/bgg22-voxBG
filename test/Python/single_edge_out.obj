@@ -1,0 +1,7 @@
+# Blender v3.2.2 OBJ File: 'sample_vertices.blend'
+# www.blender.org
+mtllib single_edge_out.mtl
+o Plane.002
+v -1.276976 -0.963908 0.421172
+v -1.688816 -0.014763 0.537789
+l 1 2

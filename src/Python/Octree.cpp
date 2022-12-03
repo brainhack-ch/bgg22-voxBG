@@ -6,6 +6,7 @@
 #include <numeric>
 #include "Octree.h"
 #include <stack>
+#include <iostream>
 
 /*
  * TODO: ADD MAX SUBDIVISION LEVEL
@@ -19,8 +20,11 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
         throw std::invalid_argument("Cannot have 0 triangles per node");
     }
     // The base case is simple: check if the number of inserted triangles is above max_triangles_per_leaf
-    if(triangles.rows() <= max_triangles_per_leaf) {
+    if(triangles.rows() <= max_triangles_per_leaf || max_depth == 0) {
         is_root_leaf = true;
+        for(int i=0; i < n_triangles; ++i){
+            triangle_node_ids.push_back(i);
+        }
     } else {
         is_root_leaf = false;
         //std::vector<ConstructionNode*> construction_nodes;

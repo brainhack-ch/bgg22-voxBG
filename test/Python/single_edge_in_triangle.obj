@@ -1,0 +1,7 @@
+# Blender v3.2.2 OBJ File: 'sample_vertices.blend'
+# www.blender.org
+mtllib single_edge_in_triangle.mtl
+o Plane.003
+v -0.537068 -0.457895 -0.408554
+v -0.546445 -0.774838 -0.807378
+l 1 2
