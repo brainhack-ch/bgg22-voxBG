@@ -45,7 +45,7 @@ add_subdirectory(pybind11)
 set(SOURCES src/Python/Octree.h src/Python/Octree.cpp src/Python/ConstructionNode.cpp src/Python/ConstructionNode.h)
 set(SOURCES_TEST src/Python/Octree.h src/Python/Octree.cpp src/Python/Octree.h
         src/Python/ConstructionNode.cpp src/Python/ConstructionNode.h
-        test/Python/Octree_test.cpp test/Python/main_test.cpp test/Python/ConstructionNode_test.cpp)
+        test/Python/Octree_test.cpp test/Python/main_test.cpp test/Python/ConstructionNode_test.cpp test/Python/utils.h test/Python/utils.cpp)
 
 
 # For main program
