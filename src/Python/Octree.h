@@ -28,6 +28,8 @@ private:
 
     bool is_root_leaf;
 
+    void create_octree();
+
 public:
 
     /**
@@ -43,6 +45,16 @@ public:
      */
     Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
            Eigen::MatrixX3i triangles, unsigned int max_subdivision_level);
+
+    /**
+     * Base constructor with no initialization, so that initialization can be done afterwards
+     * @param length
+     * @param max_subdivision_level
+     */
+    Octree(float length, unsigned int max_triangles_per_leaf, unsigned int max_subdivision_level);
+
+    void init_octree(Eigen::Vector3f center, Eigen::MatrixX3f vertices,
+                     Eigen::MatrixX3i triangles);
 
     /**
      * Main method of interest for the octree: the intersection checking of an edge with the octree

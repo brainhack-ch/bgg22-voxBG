@@ -8,14 +8,23 @@
 #include <stack>
 #include <iostream>
 
+#if PYTHON_BIND == 1
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/eigen.h>
+#endif
+
 /*
  * TODO: ADD MAX SUBDIVISION LEVEL
  */
-Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
-               Eigen::MatrixX3i triangles, unsigned int max_subdivision_level)
-        : n_triangles(triangles.rows()), max_triangles_per_leaf(max_triangles_per_leaf), side_length(length),
-          root_center(center), vertices(vertices), triangles(triangles), max_depth(max_subdivision_level){
 
+Octree::Octree(float length, unsigned int max_triangles_per_leaf, unsigned int max_subdivision_level): max_triangles_per_leaf(max_triangles_per_leaf),
+side_length(length), max_depth(max_subdivision_level)
+{
+
+}
+
+void Octree::create_octree() {
     if(max_triangles_per_leaf == 0){
         throw std::invalid_argument("Cannot have 0 triangles per node");
     }
@@ -36,7 +45,7 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
         unsigned int curr_depth = 0;
         std::iota(starting_values.begin(), starting_values.end(), 0);
         for(int i=0; i < 8; ++i){
-            ConstructionNode* node = new ConstructionNode(center, i, side_length);
+            ConstructionNode* node = new ConstructionNode(root_center, i, side_length);
             nodes.push_back(node);
             node->insertTriangles(vertices, triangles, starting_values);
             node->division_level = 1;
@@ -77,7 +86,22 @@ Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3
             current_i += 1;
         }
     }
+}
 
+void Octree::init_octree(Eigen::Vector3f center, Eigen::MatrixX3f vertices,
+                 Eigen::MatrixX3i triangles){
+    root_center = center;
+    n_triangles = triangles.rows();
+    this->vertices = vertices;
+    this->triangles = triangles;
+    create_octree();
+}
+
+Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
+               Eigen::MatrixX3i triangles, unsigned int max_subdivision_level)
+        : n_triangles(triangles.rows()), max_triangles_per_leaf(max_triangles_per_leaf), side_length(length),
+          root_center(center), vertices(vertices), triangles(triangles), max_depth(max_subdivision_level){
+    create_octree();
 }
 
 unsigned int Octree::triangleNumbers() {
@@ -149,3 +173,14 @@ bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edg
     // Perform DFS traversal of the nodes and query everytime
     return intersect;
 }
+
+#if PYTHON_BIND == 1
+
+namespace py = pybind11;
+
+PYBIND11_MODULE(octree, m) {
+    py::class_<Octree>(m, "Octree").def(py::init<float, unsigned int, unsigned int>())
+             .def("initialize", &Octree::init_octree)
+             .def("checkEdgeIntersection", &Octree::isEdgeIntersecting);
+}
+#endif
