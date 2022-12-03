@@ -385,6 +385,71 @@ TEST_F(OctreeTest, singleEdgeInsideBBAndTriangleIntersects) {
     }
 }
 
+
+TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
+    std::vector<Eigen::Vector3f> vertices;
+    std::vector<Eigen::Vector3i> faces;
+
+    read_and_populate_faces_from_obj_file(&vertices, &faces,
+                                          "/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/brain_mesh.obj");
+
+    // Now allocate our dear matrix!
+    Eigen::MatrixX3f mat_vertices(vertices.size(), 3);
+    Eigen::MatrixX3i triangle_indices(faces.size(), 3);
+
+    for(int i=0;  i < vertices.size(); ++i){
+        mat_vertices.row(i) = vertices.at(i);
+    }
+
+    for(int i=0;  i < faces.size(); ++i){
+        triangle_indices.row(i) = faces.at(i);
+    }
+
+    // Now load the edges
+    std::vector<Eigen::Vector3f> edge_vertices;
+    std::vector<Eigen::Vector2i> edge_assignments;
+    read_and_populate_edges_from_obj_file(&edge_vertices, &edge_assignments,
+                                          "/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/edges_in_brain_mesh.obj");
+
+    Eigen::MatrixX3f mat_vertices_edges(edge_vertices.size(), 3);
+    Eigen::MatrixX2i edges_indices(edge_assignments.size(), 2);
+
+    for(int i=0;  i < edge_vertices.size(); ++i){
+        mat_vertices_edges.row(i) = edge_vertices.at(i);
+    }
+
+    for(int i=0;  i < edge_assignments.size(); ++i){
+        edges_indices.row(i) = edge_assignments.at(i);
+    }
+
+
+    // Now let's create a sub node. From Blender, we can have some expectation as to how many triangles will fall within!
+    // Figure out minimal x1 we need
+    Eigen::Vector3f min_x(mat_vertices.col(0).minCoeff(), mat_vertices.col(1).minCoeff(), mat_vertices.col(2).minCoeff());
+    // Figure out maximal x2 we need
+    Eigen::Vector3f max_x(mat_vertices.col(0).maxCoeff(), mat_vertices.col(1).maxCoeff(), mat_vertices.col(2).maxCoeff());
+
+    // Determine center and length based on those
+    Eigen::Vector3f center = (max_x + min_x) / 2.0;
+    /*Eigen::Vector3f center;
+    center << 0, 0, 0;*/
+    float parent_length = (max_x - min_x).norm()/std::sqrt(2);
+
+    Octree octree(parent_length, 10, center, mat_vertices, triangle_indices, 20);
+    EXPECT_FALSE(octree.isRootLeaf());
+    // The root does not count as a node
+    EXPECT_NE(octree.getNodeNumber(), 0);
+    std::cout << octree.getNodeNumber() << std::endl;
+
+    for(int i=0; i < edges_indices.rows(); ++i){
+        Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
+        Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
+        std::cout << octree.isEdgeIntersecting(edge_origin, edge_end) << std::endl;
+        //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
+
+    }
+}
+
 /**
 * INTERSECTION FUNCTIONS TESTS
 */
