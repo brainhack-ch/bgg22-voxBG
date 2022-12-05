@@ -8,6 +8,7 @@
 #include "utils.h"
 #include <chrono>
 #include <valgrind/callgrind.h>
+#include <random>
 using namespace std::chrono;
 
 using ::testing::Return;
@@ -414,17 +415,35 @@ TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
     read_and_populate_edges_from_obj_file(&edge_vertices, &edge_assignments,
                                           "/home/guibertf/CLionProjects/graph_analysis/bgg22-voxBG/test/Python/edges_in_brain_mesh.obj");
 
-    Eigen::MatrixX3f mat_vertices_edges(edge_vertices.size(), 3);
-    Eigen::MatrixX2i edges_indices(edge_assignments.size(), 2);
+    Eigen::MatrixX3f mat_vertices_edges(1000000, 3);
+    Eigen::MatrixX2i edges_indices(10000000, 2);
 
     for(int i=0;  i < edge_vertices.size(); ++i){
         mat_vertices_edges.row(i) = edge_vertices.at(i);
+    }
+
+    /* Fill the rest with random edges, for the sake of it */
+    for(int i = edge_vertices.size(); i < mat_vertices_edges.rows(); ++i){
+        mat_vertices_edges.row(i) = Eigen::Vector3f::Random(3);
     }
 
     for(int i=0;  i < edge_assignments.size(); ++i){
         edges_indices.row(i) = edge_assignments.at(i);
     }
 
+    std::random_device rd;     // Only used once to initialise (seed) engine
+    std::mt19937 rng(rd());    // Random-number engine used (Mersenne-Twister in this case)
+    std::uniform_int_distribution<int> uni(0, mat_vertices_edges.rows() - 1); // Guaranteed unbiased
+
+    for(int i=edge_assignments.size(); i < edges_indices.rows();++i){
+        int x1 = uni(rng);
+        int x2 = uni(rng);
+        while(x1 == x2){
+            x2 = uni(rng);
+        }
+        Eigen::Vector2i assignment(x1, x2);
+        edges_indices.row(i) = assignment;
+    }
 
     // Now let's create a sub node. From Blender, we can have some expectation as to how many triangles will fall within!
     // Figure out minimal x1 we need
@@ -442,7 +461,6 @@ TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
     auto start = high_resolution_clock::now();
     Octree octree(parent_length, 10, center, mat_vertices, triangle_indices, 20);
     auto end_init = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>(end_init - start);
 
     auto init_duration = duration_cast<seconds>(end_init - start);
     std::cout << "Octree initialization took " << init_duration.count() << " seconds" << std::endl;
@@ -451,21 +469,23 @@ TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
     EXPECT_NE(octree.getNodeNumber(), 0);
     std::cout << "Counting " << octree.getNodeNumber() << " nodes after subdivision." << std::endl;
     CALLGRIND_START_INSTRUMENTATION;
-    for(int j=0; j < 10e2; ++j){
-        for(int i=0; i < edges_indices.rows(); ++i){
-            Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
-            Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
-            start = high_resolution_clock::now();
-            bool interesect_res = octree.isEdgeIntersecting(edge_origin, edge_end);
-            std::cout << (interesect_res ? "Edge intersecting." : "Edge not intersecting.");
+    //for(int j=0; j < 10e2; ++j){
+    start = high_resolution_clock::now();
 
-            end_init = high_resolution_clock::now();
-            duration = duration_cast<microseconds>(end_init - start);
-            std::cout << " Took " << duration.count() << " microseconds to query octree." << std::endl;
-            //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
+    for(int i=0; i < edges_indices.rows(); ++i){
+        Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
+        Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
+        bool interesect_res = octree.isEdgeIntersecting(edge_origin, edge_end);
+        //std::cout << (interesect_res ? "Edge intersecting." : "Edge not intersecting.");
 
-        }
+        //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
+
     }
+    end_init = high_resolution_clock::now();
+    auto duration = duration_cast<seconds>(end_init - start);
+    std::cout << " Took " << duration.count() << " seconds to query octree for all edges." << std::endl;
+
+    //}
     CALLGRIND_DUMP_STATS;
 
 }
