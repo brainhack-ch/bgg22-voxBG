@@ -44,7 +44,7 @@ public:
      * @param triangles Triangles, defined as triplets of vertices ids (points towards vertices array)
      */
     Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
-           Eigen::MatrixX3i triangles, unsigned int max_subdivision_level);
+           const Eigen::MatrixX3i& triangles, unsigned int max_subdivision_level);
 
     /**
      * Base constructor with no initialization, so that initialization can be done afterwards
@@ -65,15 +65,16 @@ public:
      * @param edge_end
      * @return
      */
-    bool isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
+    [[nodiscard]] bool isEdgeIntersecting(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                            const Eigen::Ref<const Eigen::Vector3f> &edge_end) const;
 
-    unsigned int triangleNumbers();
+    [[nodiscard]] unsigned int triangleNumbers() const;
 
-    Eigen::MatrixX3i getTriangles();
+    [[nodiscard]] Eigen::MatrixX3i getTriangles() const;
 
-    bool isRootLeaf();
+    [[nodiscard]] bool isRootLeaf() const;
 
-    unsigned int getNodeNumber();
+    [[nodiscard]] unsigned int getNodeNumber() const;
 
     ~Octree();
 };

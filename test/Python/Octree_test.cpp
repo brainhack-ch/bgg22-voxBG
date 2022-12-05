@@ -7,6 +7,7 @@
 #include "gmock/gmock.h"
 #include "utils.h"
 #include <chrono>
+#include <valgrind/callgrind.h>
 using namespace std::chrono;
 
 using ::testing::Return;
@@ -449,18 +450,24 @@ TEST_F(OctreeTest, biggerBrainMeshIntersectionTest) {
     // The root does not count as a node
     EXPECT_NE(octree.getNodeNumber(), 0);
     std::cout << "Counting " << octree.getNodeNumber() << " nodes after subdivision." << std::endl;
+    CALLGRIND_START_INSTRUMENTATION;
+    for(int j=0; j < 10e2; ++j){
+        for(int i=0; i < edges_indices.rows(); ++i){
+            Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
+            Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
+            start = high_resolution_clock::now();
+            bool interesect_res = octree.isEdgeIntersecting(edge_origin, edge_end);
+            std::cout << (interesect_res ? "Edge intersecting." : "Edge not intersecting.");
 
-    for(int i=0; i < edges_indices.rows(); ++i){
-        Eigen::Vector3f edge_origin = mat_vertices_edges.row(edges_indices(i, 0));
-        Eigen::Vector3f edge_end = mat_vertices_edges.row(edges_indices(i, 1));
-        start = high_resolution_clock::now();
-        std::cout << (octree.isEdgeIntersecting(edge_origin, edge_end) ? "Edge intersecting." : "Edge not intersecting.");
-        end_init = high_resolution_clock::now();
-        duration = duration_cast<microseconds>(end_init - start);
-        std::cout << " Took " << duration.count() << " microseconds to query octree." << std::endl;
-        //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
+            end_init = high_resolution_clock::now();
+            duration = duration_cast<microseconds>(end_init - start);
+            std::cout << " Took " << duration.count() << " microseconds to query octree." << std::endl;
+            //EXPECT_EQ(true, octree.isEdgeIntersecting(edge_origin, edge_end));
 
+        }
     }
+    CALLGRIND_DUMP_STATS;
+
 }
 
 /**

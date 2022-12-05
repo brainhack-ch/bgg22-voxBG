@@ -7,6 +7,7 @@
 #include "Octree.h"
 #include <stack>
 #include <iostream>
+#include <utility>
 
 #if PYTHON_BIND == 1
 #include <pybind11/pybind11.h>
@@ -19,7 +20,7 @@
  */
 
 Octree::Octree(float length, unsigned int max_triangles_per_leaf, unsigned int max_subdivision_level): max_triangles_per_leaf(max_triangles_per_leaf),
-side_length(length), max_depth(max_subdivision_level)
+side_length(length), max_depth(max_subdivision_level), n_triangles(0), is_root_leaf(true)
 {
 
 }
@@ -90,33 +91,33 @@ void Octree::create_octree() {
 
 void Octree::init_octree(Eigen::Vector3f center, Eigen::MatrixX3f vertices,
                  Eigen::MatrixX3i triangles){
-    root_center = center;
+    root_center = std::move(center);
     n_triangles = triangles.rows();
-    this->vertices = vertices;
-    this->triangles = triangles;
+    this->vertices = std::move(vertices);
+    this->triangles = std::move(triangles);
     create_octree();
 }
 
 Octree::Octree(float length, unsigned int max_triangles_per_leaf, Eigen::Vector3f center, Eigen::MatrixX3f vertices,
-               Eigen::MatrixX3i triangles, unsigned int max_subdivision_level)
+               const Eigen::MatrixX3i& triangles, unsigned int max_subdivision_level)
         : n_triangles(triangles.rows()), max_triangles_per_leaf(max_triangles_per_leaf), side_length(length),
-          root_center(center), vertices(vertices), triangles(triangles), max_depth(max_subdivision_level){
+          root_center(std::move(center)), vertices(std::move(vertices)), triangles(triangles), max_depth(max_subdivision_level){
     create_octree();
 }
 
-unsigned int Octree::triangleNumbers() {
+unsigned int Octree::triangleNumbers() const{
     return n_triangles;
 }
 
-Eigen::MatrixX3i Octree::getTriangles() {
+Eigen::MatrixX3i Octree::getTriangles() const{
     return triangles;
 }
 
-bool Octree::isRootLeaf() {
+bool Octree::isRootLeaf() const{
     return is_root_leaf;
 }
 
-unsigned int Octree::getNodeNumber() {
+unsigned int Octree::getNodeNumber() const{
     return nodes.size();
 }
 
@@ -129,7 +130,7 @@ Octree::~Octree(){
 
 }
 
-bool Octree::isEdgeIntersecting(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+bool Octree::isEdgeIntersecting(const Eigen::Ref<const Eigen::Vector3f> &edge_origin, const Eigen::Ref<const Eigen::Vector3f> &edge_end) const {
     bool intersect = false;
 
     // Is the edge intersecting with the root ?

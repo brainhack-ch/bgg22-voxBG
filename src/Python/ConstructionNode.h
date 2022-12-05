@@ -17,9 +17,10 @@ public:
     bool isLeaf;
     int division_level;
 
-    ConstructionNode(Eigen::Vector3f parent_center, unsigned int node_space_id, float side_length_parent);
-    void insertTriangles(const Eigen::MatrixX3f &vertex_coordinates,
-                         const Eigen::MatrixX3i &triangle_vertices,
+    ConstructionNode(const Eigen::Ref<const Eigen::Vector3f> &parent_center, unsigned int node_space_id,
+                     float side_length_parent);
+    void insertTriangles(const Eigen::Ref<const Eigen::MatrixX3f> &vertex_coordinates,
+                         const Eigen::Ref<const Eigen::MatrixX3i> &triangle_vertices,
                          const std::vector<int> &integers_of_interest);
 
     /*void setFirstLeafChild(int leafid);
@@ -28,11 +29,13 @@ public:
 
     ~ConstructionNode();
 
-    int getNumberChildren();
+    [[nodiscard]]  int getNumberChildren() const;
 
     void setAsNonLeaf();
 
-    bool checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen::Vector3f &v2, const Eigen::Vector3f &v3);
+    [[nodiscard]] bool checkTriangleInBox(const Eigen::Ref<const Eigen::Vector3f> &v1,
+                                          const Eigen::Ref<const Eigen::Vector3f> &v2,
+                                          const Eigen::Ref<const Eigen::Vector3f> &v3) const;
 
 
     /**
@@ -41,9 +44,11 @@ public:
      * @param edge_end
      * @return
      */
-    bool
-    checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::MatrixX3f &vertices,
-                            const Eigen::MatrixX3i &triangles);
+    [[nodiscard]] bool
+    checkTrianglesIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                            const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                            const Eigen::Ref<const Eigen::MatrixX3f> &vertices,
+                            const Eigen::Ref<const Eigen::MatrixX3i> &triangles) const;
 
     /**
      * Tests if the edge intersects with given triangle.
@@ -52,7 +57,9 @@ public:
      * @param triangle_vertices
      * @return
      */
-    static bool checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, const Eigen::Matrix3f &triangle_vertices);
+    static bool checkTriangleIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                       const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                                       const Eigen::Ref<const Eigen::Matrix3f> &triangle_vertices);
 
     /**
      * Tests if an edge intersects with a square box.
@@ -62,9 +69,12 @@ public:
      * @param box_side_length
      * @return
      */
-    bool checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end);
+    [[nodiscard]] bool checkBoxIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                         const Eigen::Ref<const Eigen::Vector3f> &edge_end) const;
 
-    static bool boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length);
+    static bool boxToEdgeIntersection(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                      const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                                      const Eigen::Ref<const Eigen::Vector3f> &box_center, float box_side_length);
 
 };
 

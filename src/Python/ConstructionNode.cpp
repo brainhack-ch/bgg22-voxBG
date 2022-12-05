@@ -6,8 +6,10 @@
 #include <Eigen/Geometry>
 #include <math.h>
 #include <iostream>
+#include <valgrind/callgrind.h>
 
-ConstructionNode::ConstructionNode(Eigen::Vector3f parent_center, unsigned int node_space_id,
+
+ConstructionNode::ConstructionNode(const Eigen::Ref<const Eigen::Vector3f> &parent_center, unsigned int node_space_id,
                                    float side_length_parent): isLeaf(true), leafid(0),
                                    side_length(side_length_parent/2) {
     if(node_space_id >= 8){
@@ -30,8 +32,8 @@ ConstructionNode::ConstructionNode(Eigen::Vector3f parent_center, unsigned int n
 ConstructionNode::~ConstructionNode() = default;
 
 
-void ConstructionNode::insertTriangles(const Eigen::MatrixX3f &vertex_coordinates,
-                                       const Eigen::MatrixX3i &triangle_vertices,
+void ConstructionNode::insertTriangles(const Eigen::Ref<const Eigen::MatrixX3f> &vertex_coordinates,
+                                       const Eigen::Ref<const Eigen::MatrixX3i> &triangle_vertices,
                                        const std::vector<int> &integers_of_interest) {
     // For every triangle
     for(auto &t: integers_of_interest){
@@ -48,7 +50,9 @@ void ConstructionNode::insertTriangles(const Eigen::MatrixX3f &vertex_coordinate
     }
 }
 
-bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen::Vector3f &v2, const Eigen::Vector3f &v3) {
+bool ConstructionNode::checkTriangleInBox(const Eigen::Ref<const Eigen::Vector3f> &v1,
+                                          const Eigen::Ref<const Eigen::Vector3f> &v2,
+                                          const Eigen::Ref<const Eigen::Vector3f> &v3) const{
     /*
      * Credits for the base code (adapted to our API) based on Separating axis theorem:
      * https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
@@ -121,7 +125,7 @@ bool ConstructionNode::checkTriangleInBox(const Eigen::Vector3f &v1, const Eigen
     return true;
 }
 
-int ConstructionNode::getNumberChildren() {
+int ConstructionNode::getNumberChildren() const{
     return triangle_ids.size();
 }
 
@@ -129,15 +133,21 @@ void ConstructionNode::setAsNonLeaf() {
     isLeaf = false;
 }
 
-bool ConstructionNode::checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,
-                                               const Eigen::MatrixX3f &vertices,
-                                               const Eigen::MatrixX3i &triangles) {
+bool ConstructionNode::checkTrianglesIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                               const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                                               const Eigen::Ref<const Eigen::MatrixX3f> &vertices,
+                                               const Eigen::Ref<const Eigen::MatrixX3i> &triangles) const {
+    std::array<int,3> ids = {0, 0, 0};
     if(isLeaf){
         for(auto &t: triangle_ids){
             // Loop over triangles to figure out if there exists an intersection
-            std::vector<int> ind(triangles.row(t).begin(), triangles.row(t).end());
+            ids[0] = triangles.row(t).x();
+            ids[1] = triangles.row(t).y();
+            ids[2] = triangles.row(t).z();
+
+            //std::vector<int> ind(triangles.row(t).begin(), triangles.row(t).end());
             // Check with this triangle's vertices coordinates if there is indeed an intersection
-            if(checkTriangleIntersect(edge_origin, edge_end, vertices(ind, Eigen::placeholders::all))){
+            if(checkTriangleIntersect(edge_origin, edge_end, vertices(ids, Eigen::placeholders::all))){
                 return true;
             }
         }
@@ -147,8 +157,12 @@ bool ConstructionNode::checkTrianglesIntersect(Eigen::Vector3f edge_origin, Eige
     return false;
 }
 
-bool ConstructionNode::boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end, Eigen::Vector3f box_center, float box_side_length){
+bool ConstructionNode::boxToEdgeIntersection(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                             const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                                             const Eigen::Ref<const Eigen::Vector3f> &box_center,
+                                             float box_side_length){
     // Recenter edge vector first around center
+    CALLGRIND_TOGGLE_COLLECT;
     Eigen::Vector3f p1_c = edge_origin - box_center;
     Eigen::Vector3f p2_c = edge_end - box_center;
     Eigen::Vector3f f0 = p2_c - p1_c;
@@ -162,14 +176,14 @@ bool ConstructionNode::boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen:
 
     Eigen::MatrixX3f separating_axis_faces_bb(6, 3);
 
-    separating_axis_faces_bb.row(0) = u0.cross(f0);
-    separating_axis_faces_bb.row(1) = u1.cross(f0);
-    separating_axis_faces_bb.row(2) = u2.cross(f0);
+    separating_axis_faces_bb.row(0).noalias() = u0.cross(f0);
+    separating_axis_faces_bb.row(1).noalias() = u1.cross(f0);
+    separating_axis_faces_bb.row(2).noalias() = u2.cross(f0);
 
     // Check if vector extents are aligned with bounding box along face normals of bounding box
-    separating_axis_faces_bb.row(3) = u0;
-    separating_axis_faces_bb.row(4) = u1;
-    separating_axis_faces_bb.row(5) = u2;
+    separating_axis_faces_bb.row(3).noalias() = u0;
+    separating_axis_faces_bb.row(4).noalias() = u1;
+    separating_axis_faces_bb.row(5).noalias() = u2;
 
     float extent_length = box_side_length/2;
 
@@ -190,21 +204,25 @@ bool ConstructionNode::boxToEdgeIntersection(Eigen::Vector3f edge_origin, Eigen:
 
         // See if most extreme point of the triangle intersects r.
         // If we find an axis where this is not the case, there is a separating axis: intersection impossible.
-        if(std::max(-std::max({p0, p1}), std::min({p0, p1})) > r) {
+        if(std::max(-std::max(p0, p1), std::min(p0, p1)) > r) {
             return false;
         }
     }
+    CALLGRIND_TOGGLE_COLLECT;
+
     // If all tests passed, we can return true: there exist no separating axis!
     return true;
 }
 
 bool
-ConstructionNode::checkBoxIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end) {
+ConstructionNode::checkBoxIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                    const Eigen::Ref<const Eigen::Vector3f> &edge_end) const{
     return boxToEdgeIntersection(edge_origin, edge_end, center, side_length);
 }
 
-bool ConstructionNode::checkTriangleIntersect(Eigen::Vector3f edge_origin, Eigen::Vector3f edge_end,
-                                              const Eigen::Matrix3f &triangle_vertices) {
+bool ConstructionNode::checkTriangleIntersect(const Eigen::Ref<const Eigen::Vector3f> &edge_origin,
+                                              const Eigen::Ref<const Eigen::Vector3f> &edge_end,
+                                              const Eigen::Ref<const Eigen::Matrix3f> &triangle_vertices) {
     /**
      * Based on Möller, Tomas, and Ben Trumbore. "Fast, minimum storage ray/triangle intersection." ACM SIGGRAPH 2005 Courses. 2005. 7-es.
      */
